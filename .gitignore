@@ -1,0 +1,27 @@
+.build/
+**/bin/
+**/obj/
+**/__pycache__/
+*.py[cod]
+*.log
+*.pex
+*.pas
+*.pdb
+*.zip
+.venv/
+venv/
+.vs/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.user
+*.suo
+*.key
+*.pem
+credentials*
+.aws/
+.openai/
+# Keep the explicitly documented owned baseline ESP and SEQ build inputs.

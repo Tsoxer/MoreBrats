@@ -1,0 +1,87 @@
+[
+  {
+    "name": "Dawnstar",
+    "minimum": 3,
+    "maximum": 5,
+    "base": 20480,
+    "world": 60,
+    "location": 100944,
+    "inn": "Windpeak Inn",
+    "inn_cell": 80511,
+    "inn_point": 554910,
+    "crime": 164206,
+    "town": 164223,
+    "roads": [
+      165061,
+      202757,
+      185131,
+      185145,
+      185148,
+      645690,
+      554905
+    ]
+  },
+  {
+    "name": "Falkreath",
+    "minimum": 3,
+    "maximum": 5,
+    "base": 24576,
+    "world": 60,
+    "location": 100937,
+    "inn": "Dead Man's Drink",
+    "inn_cell": 237956,
+    "inn_point": 468586,
+    "crime": 164208,
+    "town": 164215,
+    "roads": [
+      171451,
+      843422,
+      843423,
+      843424,
+      843425,
+      843428,
+      843432,
+      603713
+    ]
+  },
+  {
+    "name": "Morthal",
+    "minimum": 2,
+    "maximum": 4,
+    "base": 28672,
+    "world": 60,
+    "location": 100947,
+    "inn": "Moorside Inn",
+    "inn_cell": 80078,
+    "inn_point": 125845,
+    "crime": 164205,
+    "town": 164221,
+    "roads": [
+      115130,
+      279438,
+      394497,
+      394498,
+      279426,
+      185298
+    ]
+  },
+  {
+    "name": "Winterhold",
+    "minimum": 1,
+    "maximum": 3,
+    "base": 32768,
+    "world": 60,
+    "location": 100945,
+    "inn": "The Frozen Hearth",
+    "inn_cell": 79892,
+    "inn_point": 328456,
+    "crime": 164207,
+    "town": 164225,
+    "roads": [
+      115121,
+      202951,
+      202952,
+      202953
+    ]
+  }
+]

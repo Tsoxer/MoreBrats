@@ -1,0 +1,19 @@
+diff --git a/Caprica/papyrus/expressions/PapyrusNewArrayExpression.h b/Caprica/papyrus/expressions/PapyrusNewArrayExpression.h
+index c5c756d..1d71b29 100644
+--- a/Caprica/papyrus/expressions/PapyrusNewArrayExpression.h
++++ b/Caprica/papyrus/expressions/PapyrusNewArrayExpression.h
+@@ -25,6 +25,14 @@ struct PapyrusNewArrayExpression final : public PapyrusExpression {
+     namespace op = caprica::pex::op;
+     auto len = lengthExpression->generateLoad(file, bldr);
+     bldr << location;
++    // Skyrim ARRAYCREATE needs a destination retaining its declared array type.
++    // Reserve this temporary until function exit: it must not inherit a prior
++    // None cast or an earlier same-sized array after a failed allocation.
++    if (conf::Papyrus::game == GameID::Skyrim) {
++      auto dest = bldr.allocLongLivedTemp(type);
++      bldr << op::arraycreate { dest, len };
++      return dest;
++    }
+     auto dest = bldr.allocTemp(type);
+     bldr << op::arraycreate { dest, len };
+     return dest;

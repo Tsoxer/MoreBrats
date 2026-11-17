@@ -1,0 +1,110 @@
+{
+  "version": "1.1.0",
+  "release_zip_sha256": "51f77ffdcf7ac75057e170763dacf439583c1233d79a6fa092184ee30b9e08d8",
+  "runtime": {
+    "Scripts/MB_PlayerAlias.pex": {
+      "sha256": "30296fd5c2d8ae18460aebf1baacd31d0088263f8b84badc19432fcbe9803909",
+      "decoded_object_sha256": "48c8e7577cbfd49d51bde283e1cf6963fc034563e9a58705be9d95e2b5969877",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_VillageAlias.pex": {
+      "sha256": "09543e4b02438087bc527693ef38ea0631e8e95823bea1ca774948757d34da3d",
+      "decoded_object_sha256": "60cd01717c1c775789d4d5aec5281015d5507ced74a00fe9de202ae58ef9e29c",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_CityAlias.pex": {
+      "sha256": "dbcd60d24f21a8bec6a9c7588b755d6737de3577dbb88e285d235ea476372a4e",
+      "decoded_object_sha256": "0dc354874c59b9f5c9dddedb9fa0fc229c6632dff195382c3d0f32e27099fd73",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_VillageController.pex": {
+      "sha256": "b02d30bd7f93ed7211ae30a65991f83dabe36414a179f1e751f4c4db25848a68",
+      "decoded_object_sha256": "4cfe2de9a189dbed97020d011cb243ca8393727541136cbda48ad1e86c1c8693",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_Controller.pex": {
+      "sha256": "4eef7b7e0c641cdbcb3a7a9cb6e11b9d26aee753d62a986dcf004ebd6eb12f66",
+      "decoded_object_sha256": "5ac749c15d11ace5ff39ff5a3475b3f88419aef3151bfddd35c39dca527e6ba0",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_Recovery.pex": {
+      "sha256": "8f19b55baf56764a0a7ce2db067980c84c50b7d87f069a4d519524b26c8fb759",
+      "decoded_object_sha256": "b80b560abbab3d7eb3798419f7a33a09490156ae10d95f8bde26afe4c6919e2a",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_TownController.pex": {
+      "sha256": "252169c56a66addf9f5cfc4b7443c768ba82cf6af334006f14eed2be252a5841",
+      "decoded_object_sha256": "8c924f8d13fc718ad3b4f13ed9a596274a7fcefc383d837750aac4a73479f7db",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_CityController.pex": {
+      "sha256": "15ded03c7d2cd7354f7698cf32cffc84f7420d5db7f17aa0061b30e4ed8bda24",
+      "decoded_object_sha256": "b3f5a06e88202a96e9445b69715de36061f2a2e25fb7a84645515fa66cb14445",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "Scripts/MB_TownAlias.pex": {
+      "sha256": "fc8643e4f52e686157ad9af503849c1870ec8cd73c8394a83a7fe42a4ecb254b",
+      "decoded_object_sha256": "71bee19b2fb1b156bc7172768d0df869c467cf58e9b2d12589820c68e7f487f7",
+      "game_id": 1,
+      "pex_version": [
+        3,
+        2
+      ]
+    },
+    "MoreBrats.esp": {
+      "sha256": "ce910bccf5885cd8fa09d74bb994070ac0c9c4c7d934f6ee5b2228ba158692c6"
+    },
+    "Seq/MoreBrats.seq": {
+      "sha256": "e54367f76efba96ff666911c32709848935efdeae381dcfccc57dfb579d434c9"
+    },
+    "README.txt": {
+      "sha256": "5f65751c0bc6c8afc94714b38eb8d3c4bf2182fcfa296f50779a93e42e33dc28"
+    },
+    "CHANGELOG.txt": {
+      "sha256": "46f7af4eeef281434d5b28c644412a232dec791cf8ad5e7b91ab1146206997ec"
+    }
+  },
+  "papyrus_source_sha256": {
+    "MB_CityAlias.psc": "435b4e0f2f2047ddd0b22932660f9486cccdf6a3b1e822391ed59913cf6f48ee",
+    "MB_CityController.psc": "5d7aec98dd892db5be256817b5519802e153d927a01eef1124f180e06d9f7233",
+    "MB_PlayerAlias.psc": "0366190603f8fbc8d27b2b81c33d7ab4b624df591e540291e843fe50df243688",
+    "MB_TownController.psc": "05b15ff9cfeb6d1dd567d8483fef0bfa277d33b405ccdf6a4c6779102b003852",
+    "MB_VillageAlias.psc": "962100c251a6e8b735608a34d091f17f0812585e34d4a9e17cb74883989e9fde",
+    "MB_Controller.psc": "9e48eea3cb61b6a361d5132604a9057dfe5f97ad39005ce11b33a7dc0959a2d3",
+    "MB_Recovery.psc": "773b7905fd0e6f64e1f9722e344d78ca653c184a9cd79d770a5369b29a84e730",
+    "MB_VillageController.psc": "7866a4de6edd7d046a3ae0aa4d1e5862f24b6b4cc83a4fa27eab707dbf0bc461",
+    "MB_TownAlias.psc": "f18a143de6d2d4dcfc6bfa34ddf2f384bfbfd60d744dcec580d5d7cb8a201b44"
+  }
+}

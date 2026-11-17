@@ -1,0 +1,678 @@
+diff --git a/Caprica/common/ByteSwap.h b/Caprica/common/ByteSwap.h
+index c7873a4..300d3ea 100644
+--- a/Caprica/common/ByteSwap.h
++++ b/Caprica/common/ByteSwap.h
+@@ -4,21 +4,21 @@
+ // These are backported from STL C++23
+ namespace caprica {
+ constexpr uint16_t _Byteswap_ushort(const uint16_t _Val) noexcept {
+-  if (std::_Is_constant_evaluated())
++  if (std::is_constant_evaluated())
+     return static_cast<unsigned short>((_Val << 8) | (_Val >> 8));
+   else
+     return _byteswap_ushort(_Val);
+ }
+ 
+ constexpr uint32_t _Byteswap_ulong(const uint32_t _Val) noexcept {
+-  if (std::_Is_constant_evaluated())
++  if (std::is_constant_evaluated())
+     return (_Val << 24) | ((_Val << 8) & 0x00FF'0000) | ((_Val >> 8) & 0x0000'FF00) | (_Val >> 24);
+   else
+     return _byteswap_ulong(_Val);
+ }
+ 
+ constexpr uint64_t _Byteswap_uint64(const uint64_t _Val) noexcept {
+-  if (std::_Is_constant_evaluated()) {
++  if (std::is_constant_evaluated()) {
+     return (_Val << 56) | ((_Val << 40) & 0x00FF'0000'0000'0000) | ((_Val << 24) & 0x0000'FF00'0000'0000) |
+            ((_Val << 8) & 0x0000'00FF'0000'0000) | ((_Val >> 8) & 0x0000'0000'FF00'0000) |
+            ((_Val >> 24) & 0x0000'0000'00FF'0000) | ((_Val >> 40) & 0x0000'0000'0000'FF00) | (_Val >> 56);
+diff --git a/Caprica/common/CapricaBinaryReader.h b/Caprica/common/CapricaBinaryReader.h
+index 7516e4d..ba97abc 100644
+--- a/Caprica/common/CapricaBinaryReader.h
++++ b/Caprica/common/CapricaBinaryReader.h
+@@ -24,74 +24,66 @@ struct CapricaBinaryReader {
+ 
+   template <typename T>
+   T read() {
+-    static_assert(std::is_same_v<T, void>, "Invalid type passed to read!");
+-  }
+-
+-  template <>
+-  int8_t read() {
++    if constexpr (std::is_same_v<T, int8_t>) {
+     int8_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  uint8_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint8_t>) {
+     uint8_t val = 0;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  int16_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, int16_t>) {
+     int16_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  uint16_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint16_t>) {
+     uint16_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  int32_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, int32_t>) {
+     int32_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  uint32_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint32_t>) {
+     uint32_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  float read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, float>) {
+     float val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap_float(val);
+-  }
+-
+-  template <>
+-  time_t read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, time_t>) {
+     static_assert(sizeof(time_t) == 8, "time_t is not 64 bits");
+     time_t val;
+     strm.read((char*)&val, sizeof(val));
+     return endianness == Endianness::Little ? val : byteswap(val);
+-  }
+-
+-  template <>
+-  std::string read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, std::string>) {
+     auto len = read<uint16_t>();
+     std::unique_ptr<char[]> buf(new char[len]);
+     strm.read(buf.get(), len);
+     return std::string(buf.get(), buf.get() + len);
++  
++    }
++    else { static_assert(std::is_same_v<T, void>, "Unsupported type"); }
+   }
+ 
++
+ protected:
+   std::ifstream strm;
+ };
+diff --git a/Caprica/common/CapricaBinaryWriter.h b/Caprica/common/CapricaBinaryWriter.h
+index c058626..ddbd874 100644
+--- a/Caprica/common/CapricaBinaryWriter.h
++++ b/Caprica/common/CapricaBinaryWriter.h
+@@ -31,64 +31,55 @@ struct CapricaBinaryWriter {
+ 
+   template <typename T>
+   void write(T val) {
+-    static_assert(std::is_same_v<T, void>, "Invalid type passed to write!");
+-  }
+-
+-  template <>
+-  void write(int8_t val) {
++    if constexpr (std::is_same_v<T, int8_t>) {
+     strm.make<int8_t>(val);
+-  }
+-
+-  template <>
+-  void write(uint8_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint8_t>) {
+     strm.make<uint8_t>(val);
+-  }
+-
+-  template <>
+-  void write(int16_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, int16_t>) {
+     strm.make<int16_t>(endianness == Endianness::Little ? val : byteswap(val));
+-  }
+-
+-  template <>
+-  void write(uint16_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint16_t>) {
+     strm.make<uint16_t>(endianness == Endianness::Little ? val : byteswap(val));
+-  }
+-
+-  template <>
+-  void write(int32_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, int32_t>) {
+     strm.make<int32_t>(endianness == Endianness::Little ? val : byteswap(val));
+-  }
+-
+-  template <>
+-  void write(uint32_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, uint32_t>) {
+     strm.make<uint32_t>(endianness == Endianness::Little ? val : byteswap(val));
+-  }
+-
+-  template <>
+-  void write(float val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, float>) {
+     strm.make<float>(endianness == Endianness::Little ? val : byteswap_float(val));
+-  }
+-
+-  template <>
+-  void write(time_t val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, time_t>) {
+     static_assert(sizeof(time_t) == 8, "time_t is not 64 bits");
+     strm.make<time_t>(endianness == Endianness::Little ? val : byteswap(val));
+-  }
+-
+-  template <>
+-  void write(std::string_view val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, std::string_view>) {
+     boundWrite<uint16_t>(val.size());
+     if (val.size())
+       append(val.data(), val.size());
+-  }
+-
+-  template <>
+-  void write(identifier_ref val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, identifier_ref>) {
+     boundWrite<uint16_t>(val.size());
+     if (val.size())
+       append(val.data(), val.size());
++  
++    }
++    else { static_assert(std::is_same_v<T, void>, "Unsupported type"); }
+   }
+ 
++
+ protected:
+   allocators::ChainedPool strm { 1024 * 4 };
+ 
+diff --git a/Caprica/common/CapricaJobManager.h b/Caprica/common/CapricaJobManager.h
+index 61c98f0..86c4d4d 100644
+--- a/Caprica/common/CapricaJobManager.h
++++ b/Caprica/common/CapricaJobManager.h
+@@ -9,7 +9,7 @@
+ 
+ namespace caprica {
+ 
+-struct CapricaJob abstract {
++struct CapricaJob {
+   CapricaJob() = default;
+   CapricaJob(const CapricaJob& other) = delete;
+   CapricaJob(CapricaJob&& other) = delete;
+diff --git a/Caprica/common/CapricaStats.h b/Caprica/common/CapricaStats.h
+index 7c26c08..4481cc4 100644
+--- a/Caprica/common/CapricaStats.h
++++ b/Caprica/common/CapricaStats.h
+@@ -1,33 +1,33 @@
+-#pragma once
+-
+-#include <atomic>
+-
+-namespace caprica {
+-
+-struct CapricaStats final {
+-private:
+-  struct NopIncStruct final {
+-    size_t val;
+-
+-    NopIncStruct& operator++(int) { return *this; }
+-    NopIncStruct& operator=(size_t) { return *this; }
+-  };
+-
+-  // using counter_type = std::atomic<size_t>;
+-  using counter_type = size_t;
+-  // using counter_type = NopIncStruct;
+-
+-public:
+-  static NopIncStruct peekedTokenCount;
+-  static NopIncStruct consumedTokenCount;
+-  static counter_type importedFileCount;
+-  static counter_type inputFileCount;
+-  static NopIncStruct lexedFilesCount;
+-  static NopIncStruct allocatedHeapCount;
+-  static NopIncStruct freedHeapCount;
+-
+-  static void outputStats();
+-  static void outputImportedCount();
+-};
+-
+-}
++#pragma once
++
++#include <atomic>
++
++namespace caprica {
++
++struct CapricaStats final {
++private:
++  struct NopIncStruct final {
++    size_t val;
++
++    NopIncStruct& operator++(int) { return *this; }
++    NopIncStruct& operator=(size_t) { return *this; }
++  };
++
++  // using counter_type = std::atomic<size_t>;
++  using counter_type = size_t;
++  // using counter_type = NopIncStruct;
++
++public:
++  static NopIncStruct peekedTokenCount;
++  static NopIncStruct consumedTokenCount;
++  static counter_type importedFileCount;
++  static counter_type inputFileCount;
++  static NopIncStruct lexedFilesCount;
++  static NopIncStruct allocatedHeapCount;
++  static NopIncStruct freedHeapCount;
++
++  static void outputStats();
++  static void outputImportedCount();
++};
++
++}
+diff --git a/Caprica/common/CaselessStringComparer.cpp b/Caprica/common/CaselessStringComparer.cpp
+index b377d71..faf60f1 100644
+--- a/Caprica/common/CaselessStringComparer.cpp
++++ b/Caprica/common/CaselessStringComparer.cpp
+@@ -57,8 +57,7 @@ bool pathEq(const identifier_ref& a, const identifier_ref& b) {
+   return caselessEq(std::string_view(a.data(), a.size()), std::string_view(b.data(), b.size()));
+ }
+ 
+-alignas(128) static const __m128i spaces { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+-                                           ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
++alignas(128) static const __m128i spaces = _mm_set1_epi8(' ');
+ 
+ template <bool isNullTerminated>
+ ALWAYS_INLINE bool CaselessIdentifierEqual::equal(const char* a, const char* b, size_t len) {
+diff --git a/Caprica/common/CaselessStringComparer.h b/Caprica/common/CaselessStringComparer.h
+index 4f0853e..dcac511 100644
+--- a/Caprica/common/CaselessStringComparer.h
++++ b/Caprica/common/CaselessStringComparer.h
+@@ -72,7 +72,7 @@ struct CaselessIdentifierHasher final {
+   template <bool isNullTerminated>
+   static uint32_t hash(const char* s, size_t len);
+ 
+-  size_t operator()(const char* k) const = delete;
++  size_t operator()(const char* k) const { return (*this)(std::string_view(k)); }
+   NEVER_INLINE
+   size_t operator()(const std::string& k) const;
+   NEVER_INLINE
+diff --git a/Caprica/common/IntrusiveLinkedList.h b/Caprica/common/IntrusiveLinkedList.h
+index 1c8e183..cfe7efe 100644
+--- a/Caprica/common/IntrusiveLinkedList.h
++++ b/Caprica/common/IntrusiveLinkedList.h
+@@ -149,9 +149,7 @@ public:
+       cur.other = otherFront;
+     }
+ 
+-  private:
+-    friend LockstepIteratorWrapper<T2>;
+-    friend ConstLockstepIteratorWrapper<T2>;
++  public:
+     struct {
+       T* self { nullptr };
+       T2* other { nullptr };
+diff --git a/Caprica/common/UtilMacros.h b/Caprica/common/UtilMacros.h
+index 19c4171..6577f5b 100644
+--- a/Caprica/common/UtilMacros.h
++++ b/Caprica/common/UtilMacros.h
+@@ -6,5 +6,6 @@
+ #define NEVER_INLINE __declspec(noinline)
+ 
+ #else
+-#error TODO: Add appropriate defines for GCC/Clang.
++#define ALWAYS_INLINE inline __attribute__((always_inline))
++#define NEVER_INLINE __attribute__((noinline))
+ #endif
+diff --git a/Caprica/common/identifier_ref.h b/Caprica/common/identifier_ref.h
+index 74f0409..45b8f4b 100644
+--- a/Caprica/common/identifier_ref.h
++++ b/Caprica/common/identifier_ref.h
+@@ -102,9 +102,9 @@ struct std::formatter<caprica::identifier_ref>
+ {
+   template <class ParseContext>
+   constexpr auto parse(ParseContext& ctx) {
+-    if (ctx.begin() != ctx.end())
++    if (ctx.begin() != ctx.end() && *ctx.begin() != '}')
+       throw format_error("invalid format");
+-    return ctx.end();
++    return ctx.begin();
+   }
+ 
+   template <class FormatContext>
+diff --git a/Caprica/papyrus/PapyrusFunctionParameter.h b/Caprica/papyrus/PapyrusFunctionParameter.h
+index eeff622..191538f 100644
+--- a/Caprica/papyrus/PapyrusFunctionParameter.h
++++ b/Caprica/papyrus/PapyrusFunctionParameter.h
+@@ -42,7 +42,7 @@ struct PapyrusFunctionParameter final {
+     defaultValue = ctx->coerceDefaultValue(defaultValue, type);
+   }
+ 
+-private:
++public:
+   friend IntrusiveLinkedList<PapyrusFunctionParameter>;
+   template <typename T>
+   friend struct IntrusiveLinkedList;
+diff --git a/Caprica/papyrus/PapyrusIdentifier.h b/Caprica/papyrus/PapyrusIdentifier.h
+index 8c83697..1f30c79 100644
+--- a/Caprica/papyrus/PapyrusIdentifier.h
++++ b/Caprica/papyrus/PapyrusIdentifier.h
+@@ -179,9 +179,9 @@ private:
+ template <>
+ struct std::formatter<caprica::papyrus::PapyrusIdentifierType> {
+   constexpr auto parse(format_parse_context& ctx) {
+-    if (ctx.begin() != ctx.end())
++    if (ctx.begin() != ctx.end() && *ctx.begin() != '}')
+       throw format_error("invalid format");
+-    return ctx.end();
++    return ctx.begin();
+   }
+ 
+   template <class FormatContext>
+diff --git a/Caprica/papyrus/PapyrusType.h b/Caprica/papyrus/PapyrusType.h
+index 7004523..a46214a 100644
+--- a/Caprica/papyrus/PapyrusType.h
++++ b/Caprica/papyrus/PapyrusType.h
+@@ -155,9 +155,9 @@ inline auto& operator|=(PapyrusType::PoisonKind& a, PapyrusType::PoisonKind b) {
+ template <>
+ struct std::formatter<caprica::papyrus::PapyrusType> {
+   constexpr auto parse(format_parse_context& ctx) {
+-    if (ctx.begin() != ctx.end())
++    if (ctx.begin() != ctx.end() && *ctx.begin() != '}')
+       throw format_error("invalid format");
+-    return ctx.end();
++    return ctx.begin();
+   }
+ 
+   template <class FormatContext>
+diff --git a/Caprica/papyrus/PapyrusValue.h b/Caprica/papyrus/PapyrusValue.h
+index 3071c47..cbbca1c 100644
+--- a/Caprica/papyrus/PapyrusValue.h
++++ b/Caprica/papyrus/PapyrusValue.h
+@@ -22,6 +22,7 @@ enum class PapyrusValueType {
+   Bool,
+ };
+ 
++struct PapyrusResolutionContext;
+ struct PapyrusValue final {
+   PapyrusValueType type { PapyrusValueType::None };
+   CapricaFileLocation location;
+diff --git a/Caprica/papyrus/expressions/PapyrusFunctionCallExpression.h b/Caprica/papyrus/expressions/PapyrusFunctionCallExpression.h
+index eb129e4..2c3e14d 100644
+--- a/Caprica/papyrus/expressions/PapyrusFunctionCallExpression.h
++++ b/Caprica/papyrus/expressions/PapyrusFunctionCallExpression.h
+@@ -23,7 +23,7 @@ struct PapyrusFunctionCallExpression final : public PapyrusExpression {
+     Parameter(const Parameter&) = delete;
+     ~Parameter() = default;
+ 
+-  private:
++  public:
+     template <typename T>
+     friend struct IntrusiveLinkedList;
+     template <typename T>
+@@ -51,7 +51,7 @@ struct PapyrusFunctionCallExpression final : public PapyrusExpression {
+ 
+   virtual PapyrusFunctionCallExpression* asFunctionCallExpression() override { return this; }
+ 
+-private:
++public:
+   bool isPoisonedReturn { false };
+   bool shouldEmit { true };
+ };
+diff --git a/Caprica/papyrus/parser/PapyrusLexer.cpp b/Caprica/papyrus/parser/PapyrusLexer.cpp
+index 7f26afe..9cc3e31 100644
+--- a/Caprica/papyrus/parser/PapyrusLexer.cpp
++++ b/Caprica/papyrus/parser/PapyrusLexer.cpp
+@@ -475,9 +475,7 @@ StartOver:
+         getChar();
+       }
+ 
+-      static const __m128i identifierChars = {
+-        'a', 'z', 'A', 'Z', '0', '9', '_', '_', ':', ':', '\0',
+-      };
++      static const __m128i identifierChars = _mm_setr_epi8('a','z','A','Z','0','9','_','_',':',':',0,0,0,0,0,0);
+ 
+       int idx = 0;
+       do {
+diff --git a/Caprica/pex/PexAsmWriter.h b/Caprica/pex/PexAsmWriter.h
+index 203bf31..20549bf 100644
+--- a/Caprica/pex/PexAsmWriter.h
++++ b/Caprica/pex/PexAsmWriter.h
+@@ -21,38 +21,35 @@ struct PexAsmWriter final {
+ 
+   template <typename T>
+   void writeKV(const char* key, T val) {
+-    static_assert(std::is_same_v<T, void>, "Unknown type for the value!");
+-  }
+-
+-  template <>
+-  void writeKV(const char* key, time_t val) {
++    if constexpr (std::is_same_v<T, time_t>) {
+     ensureIndent();
+     // TODO: Add a comment output of the times in the local time.
+     strm << '.' << key << ' ' << (unsigned long long)val;
+     writeln();
+-  }
+-
+-  template <>
+-  void writeKV(const char* key, std::string val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, std::string>) {
+     ensureIndent();
+     strm << '.' << key << " \"" << escapeString(val) << "\"";
+     writeln();
+-  }
+-
+-  template <>
+-  void writeKV(const char* key, std::string_view val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, std::string_view>) {
+     ensureIndent();
+     strm << '.' << key << " \"" << escapeString(std::string(val)) << "\"";
+     writeln();
+-  }
+-
+-  template <>
+-  void writeKV(const char* key, PexUserFlags val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexUserFlags>) {
+     ensureIndent();
+     strm << '.' << key << " " << val.data;
+     writeln();
++  
++    }
++    else { static_assert(std::is_same_v<T, void>, "Unsupported type"); }
+   }
+ 
++
+   template <typename... Args>
+   void write(std::string_view msg, Args&&... args) {
+     ensureIndent();
+diff --git a/Caprica/pex/PexFunctionBuilder.cpp b/Caprica/pex/PexFunctionBuilder.cpp
+index c37ffa5..43f4f0f 100644
+--- a/Caprica/pex/PexFunctionBuilder.cpp
++++ b/Caprica/pex/PexFunctionBuilder.cpp
+@@ -3,6 +3,8 @@
+ #include <common/allocators/CachePool.h>
+ #include <common/CapricaReportingContext.h>
+ 
++static int _itoa_s(int n, char* buf, size_t count, int radix) { return std::snprintf(buf, count, "%d", n) < 0 ? 1 : 0; }
++
+ namespace caprica { namespace pex {
+ 
+ static thread_local allocators::CachePool<FixedPexStringMap<detail::TempVarDescriptor>> stringMapCache {};
+diff --git a/Caprica/pex/PexReader.h b/Caprica/pex/PexReader.h
+index 96a149e..5c53956 100644
+--- a/Caprica/pex/PexReader.h
++++ b/Caprica/pex/PexReader.h
+@@ -22,30 +22,23 @@ struct PexReader final : public CapricaBinaryReader {
+ 
+   template <typename T>
+   T read() {
+-    return CapricaBinaryReader::read<T>();
+-  }
+-
+-  template <>
+-  GameID read() {
++    if constexpr (std::is_same_v<T, GameID>) {
+     return (GameID)read<uint16_t>();
+-  }
+-
+-  template <>
+-  PexString read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexString>) {
+     PexString val;
+     val.index = read<uint16_t>();
+     return val;
+-  }
+-
+-  template <>
+-  PexUserFlags read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexUserFlags>) {
+     PexUserFlags val;
+     val.data = read<uint32_t>();
+     return val;
+-  }
+-
+-  template <>
+-  PexValue read() {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexValue>) {
+     PexValue val;
+     val.type = (PexValueType)read<uint8_t>();
+     switch (val.type) {
+@@ -71,7 +64,11 @@ struct PexReader final : public CapricaBinaryReader {
+         break;
+     }
+     CapricaReportingContext::logicalFatal("Unknown PexValueType!");
++  
++    }
++    else { return CapricaBinaryReader::read<T>(); }
+   }
++
+ };
+ 
+ }}
+diff --git a/Caprica/pex/PexWriter.h b/Caprica/pex/PexWriter.h
+index 026460e..86749de 100644
+--- a/Caprica/pex/PexWriter.h
++++ b/Caprica/pex/PexWriter.h
+@@ -21,27 +21,20 @@ struct PexWriter final : public CapricaBinaryWriter {
+ 
+   template <typename T>
+   void write(T val) {
+-    CapricaBinaryWriter::write<T>(std::forward<T>(val));
+-  }
+-
+-  template <>
+-  void write(GameID val) {
++    if constexpr (std::is_same_v<T, GameID>) {
+     write<uint16_t>(static_cast<uint16_t>(val));
+-  }
+-
+-  template <>
+-  void write(PexString val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexString>) {
+     assert(val.index != -1);
+     boundWrite<uint16_t>(val.index);
+-  }
+-
+-  template <>
+-  void write(PexUserFlags val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexUserFlags>) {
+     boundWrite<uint32_t>(val.data);
+-  }
+-
+-  template <>
+-  void write(PexValue val) {
++  
++    }
++    else if constexpr (std::is_same_v<T, PexValue>) {
+     write<uint8_t>((uint8_t)val.type);
+     switch (val.type) {
+       case PexValueType::None:
+@@ -66,8 +59,12 @@ struct PexWriter final : public CapricaBinaryWriter {
+         break;
+     }
+     CapricaReportingContext::logicalFatal("Unknown PexValueType!");
++  
++    }
++    else { CapricaBinaryWriter::write<T>(std::forward<T>(val)); }
+   }
+ 
++
+   void beginObject() {
+     objectLength = strm.make<uint32_t>();
+     objectStartSize = strm.totalAllocatedBytes();
+@@ -75,7 +72,8 @@ struct PexWriter final : public CapricaBinaryWriter {
+ 
+   void endObject() {
+     assert(strm.totalAllocatedBytes() - objectStartSize <= std::numeric_limits<uint32_t>::max());
+-    *objectLength = (uint32_t)(strm.totalAllocatedBytes() - objectStartSize);
++    const auto length = (uint32_t)(strm.totalAllocatedBytes() - objectStartSize + 4);
++    *objectLength = endianness == Endianness::Little ? length : byteswap(length);
+     objectLength = nullptr;
+   }
+ 

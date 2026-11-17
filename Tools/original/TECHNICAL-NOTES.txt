@@ -1,0 +1,173 @@
+MORE BRATS v1.1.0 — IMPLEMENTATION AND VALIDATION
+Release date: RELEASEDATE
+Author: Tsoxer
+Target: Skyrim SE/AE 1.6.1170
+
+SCOPE
+Expand appearance choices from ten Nord gender/outfit variants to forty genuine
+human-child race/gender/outfit variants per settlement. The user explicitly
+authorized appropriate vanilla donor defaults, including inherited stats and
+normal template values. Exact internal equivalence to Nord defaults is not
+claimed. More Brats' own routines and population limits remain protected.
+
+APPEARANCE SOURCES
+Race          RACE (Skyrim.esm)    Male donor                 Female donor
+Nord          0002C65B            Lars 00013BAF              Dorthe 00013477
+Imperial      0002C659            Francois 00013359          Mila 00013BAD
+Breton        0002C65C            Blaise HF:00003F56         Erith 000133AB
+Redguard      0002C65A            Alesan HF:0000403C         Braith 00013BA9
+HF denotes HearthFires.esm, not a hard-coded runtime load-order index.
+
+New NPC bases copy the appropriate existing gender/outfit variant from the
+same settlement. Only EDID, RNAM, and TPLT differ from that source. The existing
+template flag mask 0x181B is retained: Traits, Stats, SpellList, AIData, AttackData,
+and Keywords come from the appropriate vanilla donor. Factions, AI package lists,
+scripts, inventory, and BaseData are not inherited. More Brats' names, outfit
+links, essential/female flags, local factions/access keys, and package lists
+are copied unchanged. Donor jobs, personal quests, and attached scripts are not
+transferred into these generic actors.
+
+The six new donors' identity, race/gender, and child status were checked using
+UESP NPC tables and extracted Bethesda-record metadata. Public metadata directly
+identifies the three additional child RACE records and all six NPC base IDs.
+All five torso armor addons and child shoes list male/female models and all four
+child races. Grey/yellow outfits remain the existing Hearthfire OTFT records;
+gift MISC records are not used as wearable clothing.
+
+Appearance uses the same Traits-template technique as the working Nord build.
+No custom race, head mesh, texture, FaceGen file, skeleton, voice or animation is
+bundled. Complete Bethesda masters/BSAs are not installed in the cloud. These
+metadata checks and asset-inheritance references do not prove actual rendering:
+new heads, tints, skin tones, outfit coverage and appearance-mod interactions
+must be checked inside Skyrim.
+
+Source references:
+https://cslist.uesp.net/index.php?game=sr&formid=0002c659
+https://cslist.uesp.net/index.php?game=sr&formid=0002c65c
+https://cslist.uesp.net/index.php?game=sr&formid=0002c65a
+https://cslist.uesp.net/index.php?game=sr&formid=00013359
+https://cslist.uesp.net/index.php?game=sr&formid=00013bad
+https://cslist.uesp.net/index.php?game=sr&formid=HF003f56
+https://cslist.uesp.net/index.php?game=sr&formid=000133ab
+https://cslist.uesp.net/index.php?game=sr&formid=HF00403c
+https://cslist.uesp.net/index.php?game=sr&formid=00013ba9
+https://en.uesp.net/wiki/Skyrim:Francois_Beaufort
+https://en.uesp.net/wiki/Skyrim:Mila_Valentia
+https://en.uesp.net/wiki/Skyrim:Blaise
+https://en.uesp.net/wiki/Skyrim:Erith
+https://en.uesp.net/wiki/Skyrim:Alesan
+https://en.uesp.net/wiki/Skyrim:Braith
+https://ck.uesp.net/wiki/Template_Data
+https://github.com/focustense/easymod/wiki/EasyNPC-FAQ-%26-Troubleshooting
+
+RECORD AND STORAGE CHANGES
+- All 1,872 old FormIDs remain. All 190 original Nord bases and 760 placed
+  references remain byte-identical in record data. No vanilla records are overridden.
+- Append 570 NPC bases and 2,280 disabled persistent references: total 760 bases,
+  3,040 reusable actors, 4,722 major records. Only the chosen population is enabled.
+- Existing NPCs, 472 packages, roads, destinations, factions, FormLists, storage
+  CELL data, and reference identities remain. The storage GRUP grows to hold
+  added records; it is not a replacement cell or an exterior/navmesh override.
+- Only 77 old major-record payloads change: 58 display-only global defaults and
+  19 quest VMADs, each adding three actor-reference array properties. Existing
+  properties, aliases, startup settings, master order and SEQ bytes are retained.
+- New IDs are in appended blocks derived from 0x20000 + the existing settlement
+  config base. NPC bases use offsets 0..29; refs begin at offset 0x100. All IDs
+  and internal links are independently checked for collisions/resolution.
+- The plugin remains an ordinary ESP. No ESL compaction, renumbering, new master,
+  quest, alias, controller, continuously running script or timer is introduced.
+
+Papyrus arrays are limited to 128 entries. A single 360-reference city array
+would be invalid, so each controller retains its original Nord pool and appends
+ImperialRefs, BretonRefs and RedguardRefs. Individual arrays contain at most 90
+references. Three additive integer arrays hold the corresponding orphan-removal
+observations; existing Nord state and array identities remain untouched.
+
+The legacy Nord PoolIndex layout (including Whiterun's older six-plus-four
+layout) is retained for values 0..9. New selectedVariant values 10..39 index
+the new pools. SlotFromPoolIndex reverses that mapping for saved-actor adoption.
+Appearance accessors extend the existing enabled/tracked checks and reconciliation
+across all four pools without dynamically creating or deleting references.
+
+New properties absent on an old saved instance initialize with the existing
+stable-local-ID pattern. Typed array allocation/length checks precede use.
+Failed storage initialization reports reason 30/31 and does not commit setup;
+missing individual references remain pending while available variants can be
+used. Schemas stay 6/7. No blanket disabling, actor reset, quest restart, save
+cleaning, or new game is prescribed. Existing current-day Nord residents keep
+their identities; normal later daily cycles select from the expanded set.
+
+RANDOMIZATION
+The compiled TryArrival functions make three separate vanilla RNG calls:
+  RandomInt(1,4): race, Nord/Imperial/Breton/Redguard
+  RandomInt(1,2): male/female, converted to the existing zero-based gender index
+  RandomInt(0,4): the unchanged five outfit choices
+Thus each healthy available combination has probability 1/40. The old clothing
+index formula is preserved within each race. All settlements run this same logic;
+no race is tied to geography. Repeats are allowed. Missing-reference fallback is
+still a recovery path and is not an equal-weight guarantee with broken bindings.
+
+PROTECTED GAMEPLAY COMPARISON
+Actual decoded PEX comparison identifies only ten changed existing functions per
+controller: EnsureSetup, Reconcile, RecoverOrphans, PoolIndex, SlotFromPoolIndex,
+PoolSlotDisabled, TryArrival, EnabledCount, ShowStatus and InitDiagnostics.
+Changes are constrained to appearance storage/access/counting/RNG and version
+labels. Six appearance-storage/access helper functions are appended.
+
+All other existing controller functions are identical after version-string
+normalization, including Tick, Service, PlanNext, OnUpdate/OnUpdateGameTime,
+Wake/Loaded/Transition, ArrivalBlock, RoadBlock, SafeArrival, SafeRemoval,
+RemovalObservation, PickDestination, BeginTrip, UpdateRoaming, AbandonTrip,
+SetPhase and existing diagnostics. Their callback intervals, lease handling,
+visibility rules, movement decisions and time-window behavior remain intact.
+TryArrival's native placement/enable/safety suffix is preserved apart from the
+necessary pool access expressions; race selection precedes that existing path.
+
+Five alias/watchdog scripts change only release strings. Nine scripts compile
+with the exact existing patched Skyrim compiler, exit 0, and 24 inherited unused
+compatibility-field warnings. Old saved variable/property types and existing
+function signatures are retained. All newly allocated arrays have distinct,
+correctly typed allocation destinations and no None-to-array CAST pattern.
+Live strings identify v1.1.0; current diagnostic stamps are 1100. Historical phase
+globals and schema numbers retain their purpose and do not trigger migrations.
+
+PERFORMANCE AND DEPENDENCIES
+19 population controllers and 20 player-alias instances remain. Population ranges
+and the normal combined target of 42–76 enabled children are unchanged. No added
+local actor AI population, animations, or pathfinding packages are required.
+
+The fixed reference pool grows from 760 to 3,040. Snapshot/reconciliation/slot
+checks must cover the added appearances, so actor checks and helper calls increase.
+Extra persistent references, bindings and counters also consume memory/save state.
+Some pool scans examine four times the references; overall CPU cost is not a
+measured fourfold figure. Timer frequency, event registration and active NPC
+limits stay the same. Runtime CPU/RAM/ESS growth and latency are unprofiled.
+This remains scheduled bounded work, not a per-frame or unlimited-spawn system.
+
+Master list: Skyrim.esm, HearthFires.esm, Dragonborn.esm. No SKSE, Address Library,
+SPID, Papyrus extender, runtime native DLL or paid Anniversary content is added.
+All new calls are script-local helpers or existing vanilla APIs.
+
+AUTOMATED EVIDENCE / LIMITS
+Independent ESP/VMAD/PEX readers, Mutagen's separate readers, stable-ID and strict
+record/function comparisons check the final files. Mutagen reports 36,928 links
+and no missing internal references. External master geometry is not certified.
+
+Fault-aware execution of compiled PEX uses mock native calls, reference positions,
+loading, RNG, events and scheduling. It covers 1,900 settlement-days, population
+ranges, fixed-pool invariants, all 3,040 slot/variant mappings, repeated loads,
+evening/retirement phases and 57 typed v1.0.0 active-day/inn/watched-3 AM upgrade
+fixtures. Focused faults cover new-array allocation failures and stable-ID recovery,
+one missing added reference, and the unchanged Skaal stage-70 availability gate.
+
+The sample contains 5,884 selections: race counts approximately 24.4%, 26.6%,
+24.0% and 25.0%; gender 49.6%/50.4%; outfit counts approximately 19.1–20.9%.
+All 40 combinations were sampled globally; exhaustive mappings establish each
+combination's eligibility in every slot/settlement. The tests do not force
+alternation or quotas and do not measure Skyrim's real RNG or scheduler.
+
+No Skyrim executable, actual .ess upgrade, renderer, camera, native pathfinding,
+door solver or performance profiler was run in the cloud. v1.0.0 is the author's
+confirmed working baseline; the new race rendering and actual upgrade behavior
+still require the author's v1.1.0 gameplay test. Automated pass results are not
+a claim of engine gameplay success.

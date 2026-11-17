@@ -1,0 +1,82 @@
+{
+  "purpose": "Derived reading aid; the original appearance configuration is implemented in PluginBuilder/Program.cs and Papyrus/TryArrival.",
+  "races": [
+    {
+      "race": "Nord",
+      "RACE": "Skyrim.esm:02C65B",
+      "male": "Skyrim.esm:013BAF",
+      "female": "Skyrim.esm:013477"
+    },
+    {
+      "race": "Imperial",
+      "RACE": "Skyrim.esm:02C659",
+      "male": "Skyrim.esm:013359",
+      "female": "Skyrim.esm:013BAD"
+    },
+    {
+      "race": "Breton",
+      "RACE": "Skyrim.esm:02C65C",
+      "male": "HearthFires.esm:003F56",
+      "female": "Skyrim.esm:0133AB"
+    },
+    {
+      "race": "Redguard",
+      "RACE": "Skyrim.esm:02C65A",
+      "male": "HearthFires.esm:00403C",
+      "female": "Skyrim.esm:013BA9"
+    }
+  ],
+  "race_local_variants": [
+    {
+      "variant": 0,
+      "gender": "male",
+      "outfit": "red"
+    },
+    {
+      "variant": 1,
+      "gender": "male",
+      "outfit": "green"
+    },
+    {
+      "variant": 2,
+      "gender": "male",
+      "outfit": "blue"
+    },
+    {
+      "variant": 3,
+      "gender": "female",
+      "outfit": "red"
+    },
+    {
+      "variant": 4,
+      "gender": "female",
+      "outfit": "green"
+    },
+    {
+      "variant": 5,
+      "gender": "female",
+      "outfit": "blue"
+    },
+    {
+      "variant": 6,
+      "gender": "male",
+      "outfit": "grey"
+    },
+    {
+      "variant": 7,
+      "gender": "male",
+      "outfit": "yellow"
+    },
+    {
+      "variant": 8,
+      "gender": "female",
+      "outfit": "grey"
+    },
+    {
+      "variant": 9,
+      "gender": "female",
+      "outfit": "yellow"
+    }
+  ],
+  "controller_index": "race_index * 10 + race_local_variant, with race_index Nord=0, Imperial=1, Breton=2, Redguard=3"
+}

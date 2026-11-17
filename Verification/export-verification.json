@@ -1,0 +1,96 @@
+{
+  "status": "PASS",
+  "scope": "Source preservation and portable rebuild, not a new mod release.",
+  "released_archive_sha256": "51f77ffdcf7ac75057e170763dacf439583c1233d79a6fa092184ee30b9e08d8",
+  "protected_original_files_unchanged": 69,
+  "original_files_preserved_with_provenance": 286,
+  "original_gameplay_PSC_count": 9,
+  "original_gameplay_PSC_byte_identical": true,
+  "fresh_bundled_compiler_source_build": "PASS",
+  "rebuild_comparison": {
+    "Scripts/MB_PlayerAlias.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_VillageAlias.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_CityAlias.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_VillageController.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_Controller.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_Recovery.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_TownController.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_CityController.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "Scripts/MB_TownAlias.pex": {
+      "raw_byte_identical": false,
+      "decoded_object_identical": true
+    },
+    "MoreBrats.esp": {
+      "raw_byte_identical": true
+    },
+    "Seq/MoreBrats.seq": {
+      "raw_byte_identical": true
+    },
+    "README.txt": {
+      "raw_byte_identical": true
+    },
+    "CHANGELOG.txt": {
+      "raw_byte_identical": true
+    }
+  },
+  "static_plugin_checks": {
+    "records": 4722,
+    "settlements": 19,
+    "appearance_combinations": 40,
+    "reusable_actor_references": 3040,
+    "source_reference_bindings_and_compiled_instructions": "PASS"
+  },
+  "compiled_PEX_mock_tests": {
+    "status": "PASS",
+    "settlement_days": 1900,
+    "earlier_state_upgrade_cases": 57,
+    "fault_cases": 14,
+    "RNG_bounds": [
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        0,
+        4
+      ]
+    ],
+    "native_functions_geometry_and_events": "MOCKED"
+  },
+  "Skyrim_executed_for_this_export": false,
+  "actual_ESS_upgrade_tested": false,
+  "limitations": [
+    "The generator requires the included original More Brats v1.0.0 ESP/SEQ baseline; earlier bootstrap generators are not exported.",
+    "External SDK/toolchain, Boost and locked NuGet packages remain prerequisites; verification used a configured SDK and cached locked packages.",
+    "PEX file headers/debug metadata differ after recompilation; decoded script objects and instructions match the released files.",
+    "Mock tests do not verify native Skyrim rendering, pathfinding, door traversal, real-save behavior or performance."
+  ]
+}
