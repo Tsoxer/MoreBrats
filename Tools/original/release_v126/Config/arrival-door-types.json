@@ -1,0 +1,128 @@
+{
+  "form_local_id": 2236896,
+  "editor_id": "MB_ArrivalBuildingDoorTypes",
+  "query_radius": 512,
+  "max_queries": "Existing road count (3\u201318 by settlement); stops at first different valid door",
+  "strategy": "Random existing roaming anchor order + vanilla random ordinary-building-door query within512. Exact existing outdoor ground anchor used as landing; no player/LOS/occupancy checks. Avoid last successful door when another is found; same-settlement randomized ground fallback.",
+  "door_types": [
+    {
+      "editor_id": "FarmhouseDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 77489,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00012EB1",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: FarmhouseDoor01 Form ID: 0x00012eb1 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "FarmhouseDoorMinimalUse01",
+      "master": "Skyrim.esm",
+      "local_id": 781533,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=000BECDD",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: FarmhouseDoorMinimalUse01 Form ID: 0x000becdd Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "FarmhouseLDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 171184,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00029CB0",
+      "metadata": "Record Type: DOOR Name: Wooden Door Editor ID: FarmhouseLDoor01 Form ID: 0x00029cb0 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "WRShackDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 151078,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00024E26",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: WRShackDoor01 Form ID: 0x00024e26 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "WRShackDoorMinUse01",
+      "master": "Skyrim.esm",
+      "local_id": 1041521,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=000FE471",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: WRShackDoorMinUse01 Form ID: 0x000fe471 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "WRDoor02Load",
+      "master": "Skyrim.esm",
+      "local_id": 606611,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00094193",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: WRDoor02Load Form ID: 0x00094193 Source File: Skyrim.esm Patch Status: This is the default version of this FormID, but it has previously been modified. Other versions are: HearthFires.esm Parameter Value "
+    },
+    {
+      "editor_id": "WRDoor03Load",
+      "master": "Skyrim.esm",
+      "local_id": 606609,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00094191",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: WRDoor03Load Form ID: 0x00094191 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "MrkDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 114684,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0001BFFC",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: MrkDoor01 Form ID: 0x0001bffc Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "MrkDoor02",
+      "master": "Skyrim.esm",
+      "local_id": 114683,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0001BFFB",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: MrkDoor02 Form ID: 0x0001bffb Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "WHDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 228929,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=00037E41",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: WHDoor01 Form ID: 0x00037e41 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "RiftenDoorLoad01",
+      "master": "Skyrim.esm",
+      "local_id": 317165,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0004D6ED",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: RiftenDoorLoad01 Form ID: 0x0004d6ed Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "RiftenRWDoorLoad01",
+      "master": "Skyrim.esm",
+      "local_id": 455271,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0006F267",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: RiftenRWDoorLoad01 Form ID: 0x0006f267 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "SHouseDoor01",
+      "master": "Skyrim.esm",
+      "local_id": 223438,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=000368CE",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: SHouseDoor01 Form ID: 0x000368ce Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "SHouseDoor02",
+      "master": "Skyrim.esm",
+      "local_id": 283608,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=000453D8",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: SHouseDoor02 Form ID: 0x000453d8 Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "SHouseDoor03",
+      "master": "Skyrim.esm",
+      "local_id": 382954,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0005D7EA",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: SHouseDoor03 Form ID: 0x0005d7ea Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "SHouseDoor01MinUse",
+      "master": "Skyrim.esm",
+      "local_id": 1110285,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=0010F10D",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: SHouseDoor01MinUse Form ID: 0x0010f10d Source File: Skyrim.esm Patch Status: FormID has not been modified. Parameter Value "
+    },
+    {
+      "editor_id": "DLC2ThirskMeadHallDoors",
+      "master": "Dragonborn.esm",
+      "local_id": 173420,
+      "url": "https://cslist.uesp.net/index.php?game=sr&formid=DB02A56C",
+      "metadata": "Record Type: DOOR Name: Door Editor ID: DLC2ThirskMeadHallDoors Form ID: 0xDB02a56c Source File: Dragonborn.esm Patch Status: FormID has not been modified. Parameter Value "
+    }
+  ]
+}

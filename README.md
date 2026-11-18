@@ -1,111 +1,115 @@
-# More Brats v1.1.0 — source archive
+# More Brats v1.2.7 — source archive
 
-**Author: Tsoxer** · [Nexus Mods release page](https://www.nexusmods.com/skyrimspecialedition/mods/199428)
+**Author: Tsoxer** · [Nexus Mods release](https://www.nexusmods.com/skyrimspecialedition/mods/199428) · [GitHub repository](https://github.com/Tsoxer/MoreBrats)
 
-More Brats adds randomized generic children to 19 Skyrim settlements. v1.1.0 supports genuine Nord, Imperial, Breton and Redguard children, both genders and five vanilla outfits. Each settlement retains its daily population range, independent roaming, evening interior routine and safe nighttime removal.
+More Brats adds randomized generic children to 19 Skyrim settlements. v1.2.7 supports 40 vanilla child appearance donors, four human races, both genders and five clothing colors: 200 appearance/outfit combinations. Children roam independently, use their settlement's evening building and disappear safely overnight.
 
-This package preserves the **actual human-readable v1.1.0 sources**. The nine gameplay `.psc` files and original generator configuration are byte-identical to the retained release build inputs. They were not decompiled from PEX or recreated from a description. The ESP generator is the original incremental generator, with only machine-root paths made project-relative.
+The accepted v1.2.7 implementation combines gradual outdoor door-area arrivals every **3–7 in-game minutes** with interior-triggered preparation at the original street markers. Both paths share the same daily population target and tracking. Newly selected donors cannot repeat within one settlement's active population; outfits can repeat, and other settlements can independently use the same donors. Existing older-save duplicates finish their normal lifecycle.
 
-The released mod and its archives were not changed to create this export. This is a source package, not a mod update or an installation ZIP.
+This package preserves the **actual original v1.2.7 sources**, not decompiled PEX or reconstructed gameplay. All nine current `Papyrus/*.psc` files are byte-identical to the retained release inputs. Original C# generators and release utilities are retained with documented path/privacy edits. Creating this export did not modify the working mod, its sources or the installation ZIP.
 
-## Structure
+## Project structure
 
 ```text
-Papyrus/                    Nine original v1.1.0 gameplay sources
-PluginBuilder/              Original C# ESP generator, project and dependency lock
-PluginAudit/                Original independent Mutagen plugin/link checker
-Config/settlements.json     Exact original v1.1.0 generator input
-Config/fixtures/            Original settlement inputs used by mock tests
-API/                        Handwritten compile-only vanilla Papyrus interfaces
-Baseline/v1.0.0/Runtime/     Owned More Brats ESP/SEQ used by the incremental builder
-Baseline/v1.0.0/Papyrus/     Original earlier sources used for upgrade fixtures
-Compiler/caprica/           Actual modified Caprica compiler sources and MIT license
-Compiler/compat/            Original Linux compatibility headers
-Compiler/patches/           Preserved portability/Skyrim allocation patches
-ThirdParty/                 esplib/pugixml sources and dependency license texts
-Tools/build.py              New portable source-export build driver
-Tools/verify_build.py       New source-hash and released-bytecode parity checks
-Tools/original/             Original release utilities, with documented privacy edits
-Tools/support/              Original PEX/VMAD readers and fault-aware mock support
-Verification/               Hashes, original-source provenance and reference inventories
-Docs/                       Original player README
-CHANGELOG.txt               Complete released cumulative changelog
+Papyrus/                    Nine original v1.2.7 gameplay sources
+PluginBuilder/              Actual final C# generator and locked dependency graph
+PluginAudit/                Actual Mutagen record/link checker
+Config/                     Original settlement, donor and door-type configuration
+Config/fixtures/            Original settlement data for simulated tests
+Baseline/v1.0.0/Runtime/     Owned More Brats ESP/SEQ starting inputs
+Baseline/v1.0.0/Papyrus/     Preserved earlier source fixture
+Baseline/v1.1.0/ ...         Original earlier Papyrus and per-stage configuration
+Compiler/                   Preserved patched Caprica sources, shims and patches
+ThirdParty/                 Dependency sources and license notices
+Tools/build.py              Portable source-export build driver
+Tools/verify_build.py       Source and released-script parity verification
+Tools/original/release_*/   Original generator chain and development utilities
+Tools/support/              Original PEX/VMAD readers and fault-aware interpreter
+Verification/               Source provenance, expected hashes and data inventories
+Docs/                       Exact retained player documentation for build fixtures
+CHANGELOG.txt               Complete cumulative history through v1.2.7
 ```
 
-Appearance donor IDs and race constants are defined in `PluginBuilder/Program.cs`. Independent race/gender/outfit selection is in the four controller scripts' `TryArrival` functions. `Verification/appearance-mapping.json` and `settlement-bindings.json` are explicitly labelled derived reading aids, not replacement or reconstructed build source.
+The current controller logic is in `Papyrus/MB_Controller.psc`, `MB_CityController.psc`, `MB_TownController.psc` and `MB_VillageController.psc`. Their original aliases and recovery helper complete the nine-script implementation. Appearance filtering and interior preparation are part of those existing controllers; no additional manager or external framework was introduced.
+
+`Config/appearance-roster.json` contains the original donor metadata and category mappings. `Config/arrival-door-types.json` contains the original door-type list. The actual appearance-adding generator is preserved under `Tools/original/release_v120/PluginBuilder/Program.cs`; the later door-list addition is under `release_v124`. The root generator is the actual v1.2.7 stage, which consumes the preceding stage and updates release metadata.
+
+`Verification/appearance-mapping.json` and `settlement-bindings.json` are derived inventories from the accepted plugin, clearly separated from original build source. Historical configuration files retain their original version labels where they are unchanged inputs.
 
 ## Build prerequisites
 
-The portable compiler build was tested on **Linux x86-64 with SSE4.2**:
+The preserved toolchain was verified on Linux x86-64 with SSE4.2:
 
-- .NET SDK **8.0.428**, targeting .NET 8. The project pins `Mutagen.Bethesda.Skyrim` **0.49.0**, with its resolved NuGet dependency lock included.
-- Python **3.12** in the verified environment.
-- GCC **14.2** with C++23 support, CMake **3.20+**, and Ninja.
-- Boost **1.83.0** headers and the `filesystem` and `program_options` libraries. These are external build dependencies, not bundled.
-- NuGet network access on the first restore, unless the locked packages are cached.
+- .NET SDK **8.0.428**, targeting .NET 8.
+- `Mutagen.Bethesda.Skyrim` **0.49.0**, with resolved NuGet dependencies locked.
+- Python **3.12** in the verification environment.
+- GCC **14.2** with C++23 support, CMake **3.20+** and Ninja for a compiler rebuild.
+- Boost **1.83.0** headers and the `filesystem` and `program_options` libraries.
+- NuGet access on first restore, unless the locked packages are cached.
 
-The modified Caprica sources, Linux shims, pugixml **1.14** sources, and esplib **0.2.0** Python sources are included. The compiler's upstream commit and dependency details are recorded in `Verification/dependencies.json`. Its preserved patches are already applied to the included compiler tree; do not apply them again.
+The modified Caprica sources, Linux compatibility shims, pugixml **1.14** sources and esplib **0.2.0** Python sources are included. Boost, the SDK and the system toolchain are external prerequisites. The original compiler patches are already applied to the included compiler tree; do not apply them twice. See `Verification/dependencies.json` and `THIRD_PARTY_NOTICES.md`.
 
-No Skyrim installation, Creation Kit, Bethesda master file, or BSA is needed to run this generator. The game itself still needs the official assets associated with `Skyrim.esm`, `HearthFires.esm` and `Dragonborn.esm`. This export contains none of those proprietary masters/assets. The `API` files are minimal handwritten declarations used only for compilation; never install them into Skyrim.
+No Skyrim installation, Creation Kit, Bethesda master file or BSA is needed for the build. The game still needs the official assets associated with `Skyrim.esm`, `HearthFires.esm` and `Dragonborn.esm`. None of those proprietary masters or assets is included. The `API` files are small project-authored compile-only interfaces, not game-script replacements; never install them into Skyrim.
 
-## Build
+## Building
 
-From this directory, with the prerequisites available on `PATH`:
+From the extracted source directory, with the prerequisites on `PATH`:
 
 ```sh
 python3 Tools/build.py --build-compiler
 ```
 
-If the Boost headers are not installed in the normal compiler search path, supply their installation/source prefix with `--boost-root`. If using the already-built preserved patched compiler, supply its executable with `--compiler` instead of rebuilding it. `--dotnet` can select a particular SDK launcher.
+If Boost headers are outside the compiler's normal include paths, add `--boost-root` with their installation/source prefix. To use an existing preserved patched Caprica executable, pass `--compiler` instead of `--build-compiler`. `--dotnet` selects a particular SDK launcher.
 
-The driver stages an isolated workspace under `.build`, builds the original ESP generator, compiles the nine original Papyrus files, copies the released documentation and runs parity checks. Results:
+The driver creates an isolated `.build` workspace and runs the **original incremental C# generators in order, from v1.1.0 through v1.2.7**, starting with the included owned v1.0.0 ESP/SEQ. It then compiles the nine original current scripts, copies the retained runtime documentation and compares the result with the accepted v1.2.7 implementation.
 
-- `.build/work/build/v1.1.0/runtime/`: Data-root mod files.
-- `.build/MoreBrats-v1.1.0-rebuilt.zip`: rebuilt installation archive.
-- `.build/rebuild-verification.json`: comparison with the released implementation.
+Outputs:
 
-The included minimal API headers and patched compiler are intentional. A different compiler can generate different instructions; the verifier must pass before treating a rebuild as equivalent.
+- `.build/work/build/v1.2.7/runtime/`: Data-root mod files.
+- `.build/MoreBrats-v1.2.7-rebuilt.zip`: rebuilt installation archive.
+- `.build/rebuild-verification.json`: source and runtime parity report.
 
-For the original fault-aware compiled-PEX test suite, including earlier-state upgrade fixtures:
+To run the original v1.2.7 compiled-code simulation suite:
 
 ```sh
 python3 Tools/build.py --tests
 ```
 
-This uses the compiler built by the first command. It compiles the included baseline Papyrus sources for the fixtures; old reference PEX files are not bundled. Python's standard library and the included esplib reader suffice for this ESP/PEX workflow. esplib's optional upstream LZ4 dependency is used for BSA extraction, which this build does not perform.
+This uses the compiler from the first command. With an existing patched compiler, include `--compiler` on the test command too. The driver compiles the supplied historical source fixtures, creates isolated earlier-version inputs, and runs the original final suite. The five frozen helpers are copied from the rebuilt v1.1.0 fixture into later fixture runtimes, matching the release's reuse strategy without distributing reference PEX files.
 
-The driver respects an existing `DOTNET_CLI_HOME` and `XDG_DATA_HOME`. Otherwise it uses isolated build caches. `MB_NUGET_PACKAGES` can select an existing package cache for CI/offline use. First-time SDK initialization must be permitted by the build environment; this export does not install an SDK or bypass sandbox restrictions.
+The driver respects existing `DOTNET_CLI_HOME` and `XDG_DATA_HOME`. Otherwise it uses isolated caches. `MB_NUGET_PACKAGES` selects an existing NuGet cache. SDK/toolchain installation remains an environment prerequisite; the driver does not install them.
 
-## Verification and reproducibility limits
+## Verification
 
-The source export was checked against the actual released `MoreBrats-v1.1.0.zip`, SHA-256:
+This export was checked against the retained, author-accepted `MoreBrats-v1.2.7.zip`:
 
 ```text
-51f77ffdcf7ac75057e170763dacf439583c1233d79a6fa092184ee30b9e08d8
+f560011f67ceac5e3d3738ae5f78a03a984abe1f987fe677fafac2d27a735b71
 ```
 
-- All nine exported v1.1.0 gameplay sources match the original build-input hashes.
-- The portable generator rebuilt the ESP and startup SEQ byte-for-byte.
-- Recompiled PEX objects match the released declarations, variables, properties, function bodies, instructions and constants.
-- PEX source filenames, compilation/debug timestamps and other header metadata may differ. A rebuilt ZIP is therefore **not claimed to have the original release ZIP's hash**.
-- The included compiler is rebuilt from preserved modified sources. Its executable hash need not match the historical executable because linking and build paths differ. The portable CMake entry uses bundled pugixml source rather than the historical shared-library path; emitted script parity is checked independently.
+- All nine current gameplay sources match their original build-input hashes.
+- The original generator chain reproduces the ESP and startup SEQ byte-for-byte.
+- Recompiled PEX script objects match the released variables, properties, functions, instructions and constants.
+- Compilation timestamps, source filenames and debug/header metadata can differ. A rebuilt ZIP is **not** claimed to have the original release ZIP's hash.
+- The preserved compiler source is unchanged from the compiler exported and rebuilt for v1.1.0. This export's compilation used that previously source-built executable; it does not claim a second fresh compiler build.
+- The final v1.2.7 suite covers all 19 settlements, 15,200 reference/variant mappings, 40 actual donor identities, all 200 appearances, shared arrival caps, quick entry/exit, overlapping callbacks, signed FormIDs and typed earlier-state upgrades.
 
-The original generator reads the included **v1.0.0 More Brats ESP/SEQ** and appends v1.1.0 records. Those are this project's own build inputs, not Bethesda masters. This is a verified **incremental build from that baseline**, not a claim that every historical version can be regenerated from source alone. Historical bootstrap generators before v1.1.0 are outside this export.
+Tsoxer confirmed v1.2.7 successful in Skyrim. The source-export checks are separate: the cloud verification does not run Skyrim or load actual ESS files. Native calls, event delivery, loading, geometry and AI/pathfinding in the simulation suite are controlled models.
 
-Some original automation remains archival:
+`SHA256SUMS.txt` inventories every distributed file except the checksum file itself. Run `sha256sum -c SHA256SUMS.txt` from this directory to check the extracted archive. `Verification/original-source-manifest.json` records original/export hash pairs and identifies portability edits.
 
-- `Tools/original/prepare.py` originally consumed a full v1.0.0 release ZIP and generated the current sources/configuration. That old ZIP is not included because compiled headers contain historical build metadata. The current original source/config files are supplied directly, so the supported build does not need that preparer.
-- The original release-date/document/package utilities depended on temporary release-status reports and the historical compiler hash. Those temporary reports are not exported. The supported driver instead packages the exact released README/changelog and verifies the implementation directly.
-- Private website/deployment automation, Git configuration, credentials, caches, intermediate investigation files and game assets are intentionally excluded.
+## Scope and limits
 
-See `SOURCE_PROVENANCE.md` for the exact scope of export-only edits. Nothing is labelled byte-identical when it has been adapted for portability/privacy.
+This remains an **incremental build from an owned v1.0.0 baseline**, as in the v1.1.0 source archive. The source chain from v1.1.0 through v1.2.7 is supplied; bootstrap generators for versions before v1.0.0 are outside this export. It does not claim a from-empty reconstruction of the full development history.
 
-## Runtime and tests
+The original script preparers and date/document/package utilities are preserved for reference. Some relied on historical release-status reports or compiler metadata that are intentionally not exported. They are archival utilities; the supported build uses the supplied exact source/configuration and the portable driver. Private deployment automation, credentials, Git state, caches, temporary investigations, reference PEX files and Bethesda assets are excluded.
 
-The mod uses vanilla Papyrus and native Skyrim AI. It requires **no SKSE, Address Library, SPID, or external gameplay framework**. Build tools listed above are developer dependencies only.
+The source-export README and cumulative changelog identify v1.2.7 as the working release. Exact runtime documentation remains under `Docs` so the rebuild can reproduce the retained installation files without silently editing the mod archive.
 
-The automated tests use mocked native functions, events, loading and geometry. They do not establish native pathfinding, FaceGen rendering, real-save compatibility or performance inside Skyrim. The author performs the in-game checks. This source export introduces no gameplay changes.
+## Runtime requirements
+
+More Brats uses vanilla Skyrim Papyrus and native AI. **SKSE, Address Library, SPID and other external gameplay frameworks are not required.** The development dependencies above are build tools, not requirements for playing the mod.
 
 ## Licensing
 
-Tsoxer's original More Brats material is **source available, all rights reserved** to the extent protected by copyright and owned by Tsoxer. Public access does not grant permission to reuse, modify, or redistribute that original material. See [`LICENSE.md`](LICENSE.md) for the copyright notice and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for separately licensed build tools and libraries, whose license terms continue to apply.
+Tsoxer's original More Brats material remains **source available, all rights reserved**, as specified in the supplied [`LICENSE.md`](LICENSE.md). This export does not change that notice or grant a new license. Separately licensed tools, libraries and applicable derivatives remain governed by their own terms; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

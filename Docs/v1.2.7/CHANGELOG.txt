@@ -1,0 +1,825 @@
+MORE BRATS — CUMULATIVE CHANGELOG
+Author: Tsoxer
+Current release: v1.2.7 — 11-18-2026
+
+Entries are chronological. Test status describes the evidence available for
+each release; later results are identified separately. Automated simulations
+have never constituted Skyrim gameplay verification.
+
+v0.1 — 11-15-2026
+Initial Whiterun proof of concept
+- Added one generic Nord child named Child, using male/female vanilla traits
+  templates and three vanilla child outfits per gender.
+- Used six fixed reusable references, a daily appearance cycle, daytime sandbox
+  areas, a Bannered Mare evening routine, and visibility-aware nighttime removal.
+- Used vanilla assets, native AI, a quest controller, and compiled Papyrus,
+  without SKSE or a third-party gameplay framework.
+- Arrival was conservative: an interior transition or leaving the city could
+  be needed. Initial checks were structural and mocked; Tsoxer subsequently
+  confirmed appearance, outfit randomization, inn entry, and safe removal.
+- Gameplay exposed overly stationary daytime behavior near the Gildergreen.
+
+v0.2 — 11-15-2026
+Whiterun population and roaming expansion
+- Expanded the daily target to 3–6 independently randomized children, using
+  36 reusable references for six gender/outfit combinations.
+- Added broader road destinations and independent travel/pause behavior instead
+  of relying on a few long sandbox periods. Extended daily spawn distribution.
+- Kept the 8 AM / 7 PM / 3 AM lifecycle and generic child identities.
+- Actual playtesting subsequently exposed spawning, scheduling, and upgrade
+  regressions. This release was not a confirmed reliable gameplay baseline.
+
+v0.2.1 — 11-15-2026
+Startup, migration, and population recovery work
+- Added startup/migration/recovery fixes, stable-ID reference recovery, and
+  multi-NPC saved-state checks while preserving earlier identities and fields.
+- Investigated quest initialization, aliases, bindings, pending arrivals, and
+  adoption of actors already present in older saves.
+- Existing-save migration was not established as the sole cause: subsequent
+  tests on a pre-mod save still produced no children after an overnight wait.
+
+v0.2.2 — 11-15-2026
+Initialization and runtime diagnostics
+- Restored the safe interior-arrival path before requiring exterior world data.
+  A missing worldspace query could otherwise reject all outdoor destinations.
+- Bound pool actors, roads, and legacy targets directly in quest VMAD, retaining
+  FormLists and stable-ID fallbacks for saved properties. Individual missing
+  dependencies no longer had to block every otherwise valid child.
+- Used player alias cell/location events and game-time callbacks to service the
+  controller. Kept startup quests, aliases, FormIDs, and SEQ identities.
+- Added optional logging, diagnostic globals, one-shot status, and initialization
+  detail without normal-play popups. Schema advanced to 4 after reconciliation.
+- Fault-injection tests demonstrated code paths, not actual native-call results.
+  Tsoxer's engine diagnostics established running startup, a selected population,
+  resolved roads/pool, and stage 8/reason 12 with no active children.
+
+v0.2.3 — 11-15-2026
+Direct road package targets and arrival tracing
+- Distinguished 18 public roads from six private per-slot roaming markers.
+  The private marker dependency could block arrivals before actor selection even
+  when every road was resolved. Why those handles failed in Skyrim was unproven.
+- Removed private-marker dependence from arrival and daytime movement. Added
+  36 static walk/run Travel packages for the existing 18 roads, plus a short
+  actor-relative Sandbox package. Old markers and FormIDs remained for saves.
+- Preflighted road identity and actual pause/walk/run package forms before
+  enabling. Preserved disabled-reference placement and repeated safety checks.
+- Added precise per-slot dependency/lookup diagnostics and retained the lifecycle,
+  randomization, startup, watchdog, and conservative removal systems.
+- Schema advanced to 5. Saved appearance/reference identities were retained;
+  migration refreshed package state without moving active children.
+- Skyrim subsequently reported schema 5, stage 8/reason 0, population 5,
+  enabled/tracked 0, pool 36/36, roads 18/18, and literally uninitialized arrays.
+  Empty actor/destination fields did not establish that no attempt had occurred.
+
+v0.2.4 — 11-15-2026
+Array storage and silent-return repair
+- Investigated suspect None-to-array CAST instructions followed by ARRAYCREATE
+  into reused temporaries. The precise historical runtime compiler failure was
+  not proven by a Papyrus log and was not presented as an established engine fact.
+- Replaced array/None comparisons with boolean presence checks. Patched the
+  Skyrim Caprica allocation path to reserve distinct long-lived temporaries,
+  preventing allocation destinations from inheriting stale values or casts.
+- Independently inspected all 30 setup allocations and the diagnostic allocation
+  for types, lengths, distinct destinations, and failure guards. No None-to-array
+  CAST pattern remained. A failed allocation could not commit the schema.
+- Confirmed and fixed ReferenceInUse(None) matching empty resident slots. Added
+  actor readback validation and explicit missing/duplicate-reference diagnostics.
+- Runtime pool/road counts now reflect stored assignments, with resolved inputs
+  shown separately. Added storage readiness/failure detail and reason 30/31 for
+  allocation/shape and binding-readback failures. Recorded slot/actor/road progress.
+- Retained valid arrays and repaired only missing or wrongly sized storage.
+  Schema 6 committed after validation and reconciliation. Retained all 140 prior
+  record identities, actors, packages, aliases, properties, and saved field types.
+- Fault-aware tests covered allocation/readback failure, typed upgrades, skipped
+  days, and the reported runtime-state shape; these remained mocked engine tests.
+- Tsoxer subsequently confirmed working 3–6 populations, independent roaming,
+  appearance variation, inn travel, and safe removal on old and pre-mod saves.
+- New release filenames dropped the -MO2 suffix; historical filenames remained.
+
+v0.2.5 — 11-15-2026
+Vanilla clothing expansion
+- Added grey and yellow Hearthfire clothing for both male and female children:
+  five colors per gender and ten independently selected combinations in total.
+- Verified child-compatible outfit/apparel/model metadata. Reused Bethesda assets
+  and kept the original six combinations unchanged.
+- Extended the reusable pool without renumbering existing references. Preserved
+  AI, scheduling, arrival/removal behavior, diagnostics, and saved-state handling.
+- Tsoxer subsequently observed the new clothing variants and accepted the working
+  Whiterun implementation as the foundation for further settlements.
+
+v0.3.0 — 11-15-2026
+Four additional walled cities
+- Added Markarth (4–6), Riften (4–7), Windhelm (4–7), and Solitude (6–9), with
+  independent pools, city roads, randomization, and city-specific inn routines.
+- Retained Whiterun (3–6) and its existing identities and implementation.
+- Actual gameplay confirmed Whiterun's reliability but found intermittent
+  Markarth arrivals and missing populations in the other three new cities.
+  Valid records and passing simulations did not establish functioning arrivals.
+
+v0.3.1 — 11-15-2026
+Walled-city arrival and bookkeeping repair
+- Restored off-city population preparation and schedule-boundary callbacks for
+  the new cities instead of allowing dormancy to prevent safe early activation.
+- Updated current candidate checks, adoption of enabled references, and recovery
+  of interrupted enable bookkeeping. Improved worker lease ownership/recovery.
+- Preserved stable identities, appearance data, population ranges, and Whiterun's
+  protected record payloads and three PEX files.
+- At most 35 normally active children across five cities used 350 fixed refs.
+  Scripted destination changes were reduced off-city in the new controllers.
+- Tsoxer subsequently confirmed all five walled cities working in actual Skyrim.
+
+v0.4.0 — 11-16-2026
+Four unwalled capitals
+- Added Dawnstar (3–5), Falkreath (2–4), Morthal (2–4), and Winterhold (1–3).
+  Copied the proven lifecycle with settlement-specific roads and inn targets.
+- Adapted relevance checks and unloaded retirement for towns sharing Tamriel,
+  without replacing the five walled-city implementations.
+- Preserved Phase 1 records/scripts, existing identities, appearances, and saves.
+- Tsoxer confirmed the other gameplay, but Dawnstar children gathered outside
+  Windpeak Inn instead of entering. That observed problem prompted v0.4.1.
+
+v0.4.1 — 11-16-2026
+Falkreath population and Dawnstar interior destination
+- Increased Falkreath to 3–5. Added ten disabled persistent fifth-slot references
+  and the corresponding package/rank support; preserved existing identities.
+- A Falkreath-only setup branch updated old saved 2/4 population properties.
+  Stable-ID recovery extended older 40-entry bindings. Existing 3/4 daily counts
+  retained their cycle; an unsupported saved count of 2 could reroll safely.
+- Replaced Dawnstar's NearReference 0008779E/radius 650 nighttime goals with
+  explicit InCell goals for Skyrim.esm:00013A7F (DawnstarWindpeakInn).
+  The earlier activity parameter had not verified that marker as an interior.
+- Added six new package IDs 5090–5095 and replaced active NPC links, retaining
+  old records. A changed package identity allowed native reevaluation of saved
+  exterior procedures. Legacy point bindings remained for property compatibility.
+- Retained native travel/sandbox templates, schedules, faction ranks, and radius;
+  no door lock, ownership, navmesh, teleportation, or forced animation changes.
+- All 1,101 earlier IDs remained. Appended 17 records: six Dawnstar packages,
+  one Falkreath package, and ten actors. Totals: 1,118 records, 520 reusable
+  actors, and a normal maximum of 52 children across nine cities.
+- All 734 Phase 1 payloads and five Phase 1 PEX files remained identical. Six
+  of seven PEX stayed unchanged. Only MB_TownController recompiled, preserving
+  saved fields/properties/signatures, schema 7, array layouts, and unrelated AI.
+- Mutagen and independent readers checked the plugin, bindings, package goals,
+  typed PEX allocations, and the narrow diff. Five mock test groups covered
+  150 Falkreath days, variants, saved bindings, and safe retirement.
+  Synthetic geometry and manually staged indoor states did not prove door passage.
+- Tsoxer subsequently confirmed all nine cities, including Windpeak entry and
+  Falkreath's new population, working in actual gameplay.
+- Tidied the installer to one README and one cumulative changelog plus runtime
+  files. Historical downloads and detailed documentation were preserved.
+
+v0.5.0 — 11-16-2026
+Phase 3: ten smaller settlements
+- Added Riverwood (1–2, Sleeping Giant Inn), Rorikstead (1–2, Frostfruit Inn),
+  Ivarstead (2–3, Vilemyr Inn), and Karthwasten (1–2, Karthwasten Hall).
+- Added Dragon Bridge (2–4, Four Shields Tavern), Shor's Stone (1–2, Filnjar's
+  House), and Kynesgrove (1–2, Braidwood Inn).
+- Added Darkwater Crossing (1–2, Verner and Annekke's House), Stonehills
+  (1–2, Sorli's House), and Skaal Village (1–3, Skaal Village Greathall).
+  Combined Phase 3 target: 12–24. Raven Rock and Tel Mithryn remained excluded.
+- Added MB_VillageController and MB_VillageAlias for ten independent quests,
+  based on the existing lifecycle. All seven older PEX files stayed identical.
+- Preserved all 1,118 earlier record payloads after required master-index
+  normalization. Appended 719 records: 100 bases, 240 reusable actors, 148
+  packages, 190 local globals plus one release global, ten quests, ten state
+  factions, and 20 lists. Used 52 settlement-specific road/marker references.
+- Reused all ten gender/outfit combinations and native roaming. Evening package
+  goals named the actual assigned interior CELL rather than an exterior doorstep.
+- Added existing keys/access factions for Karthwasten, Shor's Stone, Darkwater
+  Crossing, and Stonehills. Did not alter door locks, ownership, player access,
+  or force-unlock flags; native AI remained responsible for access/furniture.
+- Added Dragonborn.esm explicitly for Skaal data. SourceMaster fallback properties
+  and form equality avoided confusing master indices with local IDs. Skaal
+  required DLC2MQ03 stage 70 or completion; no vanilla quest was changed.
+- Expanded SEQ from ten to twenty startup quests. Appending the master shifted
+  the file-local self index from 2 to 3; local IDs and saved identities remained.
+  This was normal master rebasing, not ESL compaction or renumbering.
+- New diagnostics used build 500; schemas remained 6/7. New controllers retained
+  existing preparation, retry, lease, bookkeeping, and safe removal principles.
+- Structural checks covered 1,837 records, bindings, old payloads, appearances,
+  references, and 108 public Bethesda-record metadata identities. Two new scripts
+  compiled in Skyrim PEX format; independent readers checked allocations.
+- Five fault-aware actual-PEX mock groups covered 100 days per new settlement,
+  variants, schedules, visits, saved states, and recovery. Native geometry,
+  scheduling, quest progress, and doors were mocked, not tested inside Skyrim.
+- Tsoxer subsequently reported missing major-city populations after normal fast
+  travel and indoor waiting as well as console travel: Whiterun 4, Morthal 4,
+  Windhelm 6 selected, with zero enabled/tracked. Other cities were not thereby
+  classified as broken. Four tested villages spawned/despawned, but observable
+  exterior-to-interior entry was unreliable; children could be indoors later.
+- Updated earlier cumulative dates through v0.3.0 to 11-15-2026. Retained later
+  dates and historical filenames. Privacy cleanup changed some historical
+  documentation/archive checksums, without changing their runtime payloads.
+
+v0.5.1 — 11-16-2026
+Worker transitions and native village interior travel
+
+Evidence at release
+- Reason 14 identified loaded/same-world exterior placement deferral. Stage 16 /
+  reason 1 identified a busy callback. Windhelm's per-slot 23 described a previous
+  captured-cycle/daytime mismatch; it was not the current reason or a lookup code.
+- v0.5.0 retained all major-city payloads after rebasing and all seven old PEX
+  binaries. Inspection found no static master-index collision, bad parent group,
+  startup SEQ omission, or cross-city binding. This did not prove identical
+  runtime behavior. Ten extra workers increased shared scheduler activity;
+  engine queue pressure was not profiled and was not established as the cause.
+- Old PEX allowed a busy transition's short retry to be overwritten by the
+  finishing worker's longer PlanNext timer. Controlled interleavings reproduced
+  this in both v0.4.1 and v0.5.0; it was not a newly introduced defect by itself.
+- Whiterun yielded before claiming its processing lock and released ownership
+  before snapshot/scheduling completed. Its cached safeRoads values could veto
+  a newly safe indoor opportunity. These weaknesses also predated v0.5.0.
+- All 34 Phase 3 night goals used Sandbox01C254 without a separate Travel step.
+  InCell goals were valid constraints but not proof of observable door passage.
+
+Corrections
+- Added one Bool transitionPending and one Int lastWorkerStage to each of four
+  controller types, retaining every existing saved variable/property/signature.
+  Transition notifications arriving while busy survived the finishing worker's
+  normal scheduling. A conditional 0.1-second retry used the existing timer.
+- Whiterun claimed ownership before Status(2), retained it through scheduling,
+  checked its epoch after snapshots, and used current SafeArrival checks.
+  Preserved safeRoads for saves and retained the original visibility rules.
+- Added optional status detail for last non-busy stage, pending transition, and
+  lease remaining. Per-slot 23 traces included captured/current cycles and hour.
+  Normal play gained no unsolicited diagnostic messages.
+- Added 34 native Travel016FAA packages before the unchanged night sandboxes,
+  one clocked and one per slot for each village. They targeted the same interior
+  CELL, required GetInCell == 0, and ceased to apply after entry. Native AI then
+  selected the existing sandbox. No scripted door movement or visible teleport.
+- All 1,837 prior IDs remained. Added 34 packages and MB_RepairBuild = 501;
+  total 1,872 records. Only 100 existing village NPC package lists changed.
+  Retained 190 appearance bases, 760 actors, all clocks, roads, destinations,
+  population ranges, quests, aliases, bindings, masters, and the 80-byte SEQ.
+- Recompiled four controller PEX files; five alias/watchdog PEX stayed identical.
+  Retained schemas 6/7 and migration identities, without resetting quests/actors.
+  Executing controller diagnostic stamps identified 501; phase globals retained
+  their historical values. Skaal's availability condition remained unchanged.
+
+Validation and subsequent testing
+- Independent ESP/VMAD/PEX checks verified the allowed record diff, master/group
+  handling, package targets/conditions, and saved storage. Compilation succeeded
+  with 24 inherited unused-field warnings. All 30 typed setup allocations per
+  controller retained distinct destinations, without None-to-array CASTs.
+- Five actual-PEX mock groups covered controlled interleavings, 1,140 settlement-
+  days, ten appearances, all 19 population ranges, typed v0.4.1/v0.5.0 upgrades,
+  saved array identity, watched retirement, skipped days, and fault recovery.
+  Native callbacks, placement, geometry, and door results remained mocked.
+- At publication, restored major-city reliability and native door traversal
+  still required gameplay testing. The complete cause of the apparent v0.5.0
+  engine regression was not established and was not retrospectively proven.
+- Tsoxer initially observed absent populations in Whiterun and Morthal again,
+  but later saw successful activation in both. Whiterun children were present
+  after an extended daytime indoor stay; that observation did not measure the
+  exact activation time. Delayed/inconsistent activation remained a known behavior.
+- Tsoxer individually confirmed daytime spawning in all ten Phase 3 settlements
+  and observed nighttime entry in multiple cases, including visible travel into
+  Frostfruit Inn in Rorikstead. This was not exhaustive all-night/multi-day testing.
+- After further gameplay testing, Tsoxer accepted v0.5.1 as the working baseline
+  for public release. Historical failure reports remain part of the record.
+
+v1.0.0 — 11-16-2026
+First official free public release
+- Promoted the accepted v0.5.1 gameplay implementation directly to v1.0.0.
+  Cancelled v0.5.2 investigation/development; no v0.5.2 build was released and
+  no proposed inn-spawning fallback was implemented.
+- Reorganized the public README with features, all 19 populations/destinations,
+  installation, requirements, scheduling expectations, compatibility, performance,
+  and save/uninstallation information. Cleaned the cumulative development history
+  while preserving dates, meaningful technical fixes, regressions, and milestones.
+- At Tsoxer's request, updated all nine scripts' current diagnostic/log version
+  strings to v1.0.0. Updated only diagnostic WriteDiagnostic stamp constants
+  from 501 to 1000. Recompiled with the unchanged patched Skyrim compiler.
+- Updated the ESP description and 58 current diagnostic/build global defaults.
+  Those globals do not control migration or AI package conditions. Historical
+  phase globals, schema values, and every saved field/property type remain.
+  Already-saved global values may persist; live controller stamps refresh on use.
+- Independently compared every decoded PEX function: only 45 approved version
+  constants/strings differ. All opcodes, branches, calls, locals, variables,
+  signatures, properties, and typed array allocations match v0.5.1.
+- Kept all 1,872 record identities and record/group headers. Apart from the
+  description and display-only global values, record bytes are identical.
+  All NPCs, references, AI packages, quests, bindings, schedules, populations,
+  settlement data, and the startup SEQ retain the baseline implementation.
+- No gameplay repair, optimization, architecture change, new settlement,
+  dependency, asset, or migration was introduced. The final runtime files are
+  not byte-identical because of these explicitly authorized cosmetic changes.
+- Final static checks and fault-aware compiled-PEX mock tests pass. Public
+  performance assessment is moderate Papyrus overhead with localized native AI
+  demand; no FPS, runtime latency, memory, or large-load-order benchmark exists.
+- Existing activation delays remain documented. A non-blocking Whiterun recovery
+  edge case was identified: an externally disabled current-day resident can leave
+  a slot empty until the next daily cycle. It was not changed in this label-only
+  release and was not established as the cause of earlier reported delays.
+- Final archive contains the ESP, nine compiled PEX, startup SEQ, one README,
+  and this complete cumulative changelog. No proprietary assets or development
+  tooling are included. The final v1.0.0 package was not separately run in Skyrim
+  in the cloud; the gameplay evidence is Tsoxer's accepted v0.5.1 testing.
+
+v1.1.0 — 11-16-2026
+Vanilla human child race variety
+- Added genuine Imperial, Breton and Redguard child races alongside the existing
+  Nord children. Each race supports male/female appearances and all five existing
+  red, blue, green, grey and yellow child outfits: 40 combinations per settlement.
+- Race is an independent RandomInt(1,4) draw (25% each), gender an independent
+  RandomInt(1,2) draw (50% each), and clothing retains RandomInt(0,4) (20% each).
+  All races are eligible in all 19 settlements; no city-specific weighting.
+- Retained Nord donors Lars/Dorthe. New donors: Imperial Francois/Mila, Breton
+  Blaise/Erith and Redguard Alesan/Braith. Corresponding child RACE records and
+  donor gender identities were checked against public game-record/reference data.
+- As authorized, new variants inherit their appropriate vanilla donors' normal
+  child stats and template defaults. Exact Nord-only non-appearance equivalence
+  is not claimed. Donor scripts, factions, inventory and AI package lists are not
+  inherited; each new record copies the corresponding settlement's More Brats
+  packages, factions, keys, name and outfit unchanged.
+- Appended 570 NPC bases and 2,280 initially disabled persistent actor references.
+  The complete fixed pool now contains 3,040 references and 760 NPC bases. The
+  normal combined active daily target remains 42–76, with all 19 ranges intact.
+- Preserved all 1,872 existing FormIDs, 190 original Nord NPC bases, 760 original
+  placed actors, all 472 AI packages, roads, inn/cell goals, factions and lists.
+  Added three appearance-reference bindings to each of 19 existing quests; alias
+  data, startup settings and SEQ bytes are unchanged. Total: 4,722 records.
+- Kept the legacy Nord pool/indices and saved variant values 0–9 unchanged.
+  Three separate actor-reference arrays and three orphan-observation arrays per
+  controller avoid Papyrus's 128-entry array limit. New variant indices 10–39
+  map to appended reusable references; no unlimited spawning or new controller.
+- Extended only appearance storage validation/binding, lookup/indexing, selection,
+  and existing pool bookkeeping/counting to cover the additions. Missing saved
+  new properties recover through stable local IDs. Existing valid arrays and
+  active actors are retained, with schemas 6/7 and old property/field types intact.
+- Spawning safety tests, road selection, native placement/enabling sequence,
+  daytime roaming, run/pause timing, pathfinding goals, schedules, retirement
+  observations, callbacks, leases and transition handling retain v1.0.0 logic.
+  Phase 3's Travel-to-Sandbox packages are byte-identical. No unrelated bug fix.
+- Recompiled nine scripts: four require appearance-pool changes; five aliases/
+  watchdog change only version strings. Live labels identify v1.1.0 and current
+  diagnostic stamps use 1100; historical phase values and schemas are unchanged.
+- Independent ESP/VMAD/PEX readers and a strict baseline diff check old records,
+  new race/template/outfit pairs, property bindings, internal links and array
+  allocation bytecode. All arrays stay at or below 90 entries individually.
+- Compiled-PEX mock tests cover 1,900 settlement-days, all population ranges,
+  all 3,040 slot/variant mappings, 57 typed old-state upgrade cases, faults,
+  missing added references, the Skaal availability gate and independent RNG draws.
+  Sampling is approximate; the algorithm's probabilities are not forced quotas.
+- The same active NPC counts, AI packages, scripts/instances and timers remain.
+  Persistent storage and pool-scan work increase because four appearance pools
+  are examined. No claim of unchanged CPU/RAM/save size or measured performance.
+- Public metadata confirms male/female models and all four child-race entries
+  for the five existing torso outfits and shoes. Traits inheritance reuses
+  Bethesda appearances; no custom races, FaceGen, models, textures or voices
+  are supplied. Requirements remain the same three official masters; no SKSE,
+  Address Library, SPID, external framework or paid Anniversary content.
+- Source/API/reference checks are not a Skyrim rendering, native pathfinding,
+  real ESS migration or performance test. v1.1.0 still needs Tsoxer's playtest,
+  particularly new heads/skin tones/outfits and an upgrade with active children.
+  Existing activation delays and earlier known limitations remain unchanged.
+- Historical downloads and all v0.1–v1.0.0 changelog entries remain intact.
+
+
+More Brats — v1.2.0 Changelog
+Date: 11-17-2026
+Status: UNRELEASED DEVELOPMENT CANDIDATE
+Author: Tsoxer
+
+- Direct continuation of the actual released v1.1.0 sources and plugin.
+- Expanded from 8 to 40 normal vanilla appearance donors: 22 male and 18 female.
+  Added 32 donors, each with all five outfits: 200 donor/outfit combinations.
+- Race (25% each), gender (50% each) and five-outfit (20% each) draws remain
+  independent; an added draw chooses within that race/gender donor category.
+- Babette is excluded for vampire/assassin defaults. Helgi is excluded because
+  safe normal living-only inheritance was not established under the existing
+  Traits/SpellList/Keywords mask; the exact ghost-effect carrier is unverified.
+  Fjotra is included without inheriting her quest scripts, factions or packages.
+- All 4,722 previous FormIDs, 760 NPC bases, 3,040 placed actor identities and
+  variant indices 0–39 survive. All old packages, roads, schedules, populations,
+  aliases, destinations and serialized variable/property types remain.
+- Appended 3,040 NPC bases, 12,160 disabled reusable references and 19 FormLists.
+  Added bounded typed Actor/Int cache pages for cosmetic bindings/orphan samples;
+  vanilla arrays remain at or below 128 elements. Existing saves resolve the
+  new binding through a stable local FormID. No quest or population reset.
+- Four controllers compile with narrowly scoped appearance access/bounds and
+  selection changes. Five alias/watchdog PEX files and startup SEQ are identical.
+  Controller diagnostics use v1.2.0 / 1200; storage schemas remain 6/7.
+- Structural/PEX/mocked tests pass: 15,200 mappings, all 200 appearance choices,
+  190 settlement-days, 57 typed old-state upgrades and 10 fault/gate checks.
+  Native Skyrim rendering, pathfinding, real saves and replacers remain untested.
+- Papyrus workload estimate: HEAVY for the full expanded fixed pools. Routine
+  scans check 5x as many references; cached lookup avoids repeated FormList
+  natives but adds script instructions. Active AI counts and timer frequency
+  are unchanged. No in-game timing/FPS/RAM/save-size benchmark is claimed.
+- Not uploaded to Nexus or the download website. v1.1.0 remains unchanged.
+
+
+More Brats — v1.2.1 Changelog
+Date: 11-17-2026
+Status: UNRELEASED PRIVATE PLAYTEST CANDIDATE
+Author: Tsoxer
+
+- Corrective continuation of v1.2.0; v1.1.0 remains the stable public release.
+- Fixed conditional all-arrival failure when the new catalog is unavailable,
+  and new-appearance binding failures when catalog entries return None. Keep
+  valid saved caches, then try validated catalog entries and stable actor IDs.
+  Missing/wrong-size catalogs no longer veto independently usable references.
+- Fixed invalid array reads from the diagnostic audit after partial setup
+  failure. Typed cache shape/readback checks remain; unknown references remain
+  explicitly pending. No safety check or actor identity is bypassed.
+- Fixed loss of a consumed one-shot debug request after worker cancellation.
+  Display it before long work, using a clearly labelled completed count sample.
+  Added catalog/binding/fallback diagnostics without permanent notifications.
+- Removed duplicate pool lookups and repeated bound calculations; resident
+  membership searches stop when found. Full audits and recovery remain; no new
+  controller, timers, cadence changes or spawning architecture were added.
+- All 19,941 v1.2.0 FormIDs, NPC/reference/package/quest payloads, VMAD bindings,
+  40 donors, 200 variant meanings and saved field/property types retained.
+  Five PEX and SEQ stay byte-identical. Four controllers and cosmetic build
+  labels change; executing labels are 1201, storage schemas remain 6/7.
+- Actual compiled TryArrival exercises all 200 variants under controlled native
+  faults. Checks include 190 mocked settlement-days, 57 v1.1.0 and 57 v1.2.0
+  typed upgrades, all 15,200 mappings, partial allocations, catalog failures,
+  consecutive visits, overnight sequences and expired-worker debug requests.
+- Routine enabled-count instructions decrease about 34.6% versus v1.2.0 in
+  the mock execution count; 15,200 native reference checks remain. Papyrus is
+  still assessed HEAVY. No engine timing/FPS/RAM benchmark is claimed.
+- The exact runtime trigger in the reported game is not established. Existing
+  old-donor residents can correctly survive an upgrade until the next daily
+  cycle. Restored in-game reliability requires Tsoxer's confirmation.
+- No Nexus publication, roster reduction, new-game requirement, quest reset,
+  save-cleaning instruction, asset dependency or gameplay schedule change.
+
+
+More Brats — v1.2.2 Changelog
+Date: 11-17-2026
+Status: UNRELEASED PRIVATE PLAYTEST CANDIDATE
+Author: Tsoxer
+
+- Direct continuation of complete v1.2.1. Outdoor settlements and expanded
+  donors were confirmed by the author; Whiterun/Solitude arrivals were unreliable.
+- Identified a concrete old walled-city veto: attached exterior destination
+  cells were rejected regardless of player distance (reason14). It reproduces
+  in old compiled code with all five synthetic city grids attached. This is
+  evidence of the blocking condition, not proof of every in-game delay's cause.
+- All 19 settlements now use timed, sequential arrivals. First and following
+  opportunities use 15–30 randomized in-game minutes. A loaded save, fast travel
+  or wait never replays multiple missed arrivals together. Only the relevant
+  settlement advances its arrival sequence; existing worker ownership remains.
+- Retained fixed roads and AI validation. Loaded exterior candidates can qualify
+  at 1536 units or farther, with a bounded best-effort LOS check on loaded markers.
+  Safety is checked again after latent movement/before enabling. Blocked
+  arrivals try other roads, then defer individually; no distance polling loop.
+- Routine enabled counts use tracked residents (maximum 76 across all 19), not
+  15,200 potential appearance references. Full initialization/load recovery,
+  orphan handling, periodic relevant-city censuses and selected-slot checks
+  remain. A detected untracked actor requests existing reconciliation.
+- Empty irrelevant controllers avoid repeated arrival polling. Existing
+  aliases/load events remain; a daily boundary wake remains. Existing active
+  off-city retirement maintenance is retained. No new scripts/controllers.
+- Added conservative scalar schedule/audit state only. Every existing saved
+  variable/property name, type and default is retained; schemas remain 6/7.
+  Active residents are not deleted/replaced and old appearance indices remain.
+- All 19,941 FormIDs, all NPC/reference/package/quest/VMAD payloads, appearance
+  mappings, populations, destinations and startup SEQ remain. Five compiled
+  helpers are byte-identical. Only four controller PEX and 58 display globals
+  change. Executing build labels are 1202. Stable v1.1.0 stays untouched.
+- Existing roaming, native Travel-to-Sandbox, retirement observations and
+  reconciliation/orphan functions retain their compiled operations, apart
+  from cosmetic version text. The existing resident/departure Tick arm is
+  unchanged; only its old batch-arrival branch is replaced.
+- Independent ESP/PEX checks and fault-aware compiled-script tests cover
+  15,200 mappings, all 200 selections, all 19 outdoor sequences, all five loaded
+  walled cities, actual timer registrations under a synthetic event driver,
+  blocked markers, interrupted placement, repeated visits, typed upgrades
+  from 1.1.0/1.2.0/1.2.1, watched 03:00 and skipped-day recovery.
+- Papyrus estimate: MODERATE for ordinary operation, with occasional expensive
+  full recovery/census work. This is a code-based comparison, not a measured
+  in-game benchmark. AI/pathfinding and maximum loaded population are unchanged.
+- Requires the author's Skyrim playtest for actual outdoor pop-in safeguards,
+  callback delivery after fast travel/wait/load, real existing saves, native
+  pathfinding and overnight behavior. No engine success or zero lag is claimed.
+
+
+More Brats — v1.2.3 Changelog
+Date: 11-17-2026
+Status: UNRELEASED PRIVATE PLAYTEST CANDIDATE
+Author: Tsoxer
+
+ARRIVAL CORRECTIONS
+- Direct continuation of complete v1.2.2. No older implementation was substituted.
+- Corrected a destructive scheduler path: temporary irrelevance no longer erases
+  a pending arrival deadline. New-cycle, night and completion reset behavior
+  remains; irrelevant settlements suspend arrivals instead of spawning remotely.
+- Deferred cell/location notification processing by two real seconds through the
+  existing update event. It no longer runs the heavy worker inline or cancels
+  the existing game-time deadline merely because a transition notification arrived.
+- Walled-city arrival relevance can use a valid current location independently
+  of an unavailable world query, as the existing open-world logic already can.
+- Preserved native game-time scheduling and added one deadline-matched real-time
+  counterpart only for local pending arrivals or an empty local next-8-AM cycle.
+  It reads the verified official TimeScale global; no assumed fixed timescale.
+  Both callbacks check the same absolute game-time due value and use existing
+  worker ownership, capacity and placement guards. No catch-up batch, recurring
+  distance loop, new script or global settlement manager was introduced.
+- Retained distance/LOS safeguards, roads, actor pools, donor RNG, daytime
+  movement destinations, inn packages, retirement and recovery functions.
+- MB_Debug always targets Whiterun; the reported 1200/960 pool was not Solitude's
+  or Dragon Bridge's controller. The Whiterun popup now identifies this clearly.
+  The unchanged watchdog can wake an empty remote Whiterun for a debug request.
+  Per-settlement commands remain available. New callback/world/deadline fields
+  distinguish a wrong controller, missing events and unsafe marker deferrals.
+- The reported Skyrim absence is real author evidence. Lost native game-time
+  callbacks and transient entry metadata reproduce stalls in controlled compiled-
+  code tests, but the exact native trigger in that session remains unconfirmed.
+  No unsupported claim of proven general Skyrim timer failure or script lag.
+
+SEPARATE REQUESTED RUNNING CHANGE
+- Increased outdoor trip-start running chance from 25% to 33.25%, using a
+  3325/10000 integer draw: exactly +33% relative, not +33 percentage points.
+- Increased the existing run cap from 2–6 to 2.66–7.98 in-game minutes (+33%).
+  Destinations, walk/run packages, pauses and evening movement are unchanged.
+  Reaching a destination or native AI can end a run before the cap.
+
+PRESERVATION AND VALIDATION
+- All 19,941 FormIDs, 40 donors, 200 variants, 15,200 reusable actor mappings,
+  population ranges and NPC/reference/quest/AI-package/VMAD payloads retained.
+  Five helper PEX and startup SEQ are byte-identical. Four controllers compile;
+  58 diagnostic display globals and header description identify build 1203.
+- Existing serialized properties, variables, defaults and schemas 6/7 retained.
+  Added only two callback counters and a cached official clock binding per
+  controller. No actors, quests, saved residents or cycles are reset.
+- Fault-aware tests execute actual PEX with actual ESP bindings and cancellable
+  synthetic timers. Cover all 19 outdoor arrivals and fresh morning cycles,
+  callback loss, shared-deadline deduplication, delayed entry, marker deferrals,
+  debug callbacks, all 200 appearances, typed upgrades from v1.1.0/v1.2.0/
+  v1.2.1/v1.2.2, existing night behavior and exact running branch boundaries.
+- Routine enabled counting still uses at most 76 checks across all 19, not
+  15,200. Full recovery/census work remains occasional and potentially expensive.
+  Papyrus estimate remains MODERATE; no measured Skyrim performance claim.
+- Actual Skyrim rendering, native event timing, real ESS migration, paths/doors
+  and observed running require author playtesting. Stable v1.1.0 is untouched.
+
+
+More Brats — v1.2.4 Changelog — 11-17-2026
+PRIVATE PLAYTEST CANDIDATE; v1.1.0 remains the stable public release.
+
+REQUESTED DOOR-BASED ARRIVALS
+- Replaced arrival distance/LOS and peer-spacing vetoes with randomized ordinary
+  exterior-building-door selection around the same existing roaming points.
+  Player position, walking/running, viewing direction and door occupancy do not
+  gate placement. Visible appearance is permitted by the requested design.
+- A bounded native local query uses a new 17-entry ordinary building-door-type
+  FormList. It excludes city gates, dungeon doors and trapdoors. A random existing
+  road order and vanilla random-door query choose entrances independently per
+  arrival; avoid the last successful door if another is found. Equal weighting
+  across every city door is not asserted. No worldwide discovery or new manager.
+- Place on the existing outdoor ground point within 512 units of that entrance;
+  do not guess door offsets or move inside meshes. If no local door resolves,
+  use a randomized valid outdoor point in the same settlement instead of stalling.
+  No fixed placed door references, new coordinates or door overrides were added.
+- Retained 15–30 in-game-minute arrival deadlines, one child per opportunity,
+  daily caps, 19 settlements, 40 donors, 200 variants and all appearance indices.
+
+TARGETED ACTIVATION/CALLBACK REPAIRS RETAINED
+- Tracking arrays can contain disabled activation reservations. The old code
+  calls EnableNoWait and returns with a pending reservation (stage11, not a
+  confirmed success). Now use vanilla Enable(False), verify IsDisabled after it returns,
+  and only then record a confirmed arrival. A failed enable reports reason 44,
+  releases its reservation and retains a future arrival opportunity.
+- Add impossible old-session enable-deadline expiry to Whiterun's separate
+  controller. The shared city/town/village controllers ALREADY had this check;
+  preserve it there. Expire only disabled pending bookkeeping, not active actors.
+  A full array of pending enables receives one expiry wake through the existing
+  timer instead of suppressing every arrival wake.
+- Coalesce repeated transition notifications so moving-player events cannot
+  repeatedly push the same short deferred wake into the future.
+- Run the existing full 200-variant slot audit before actor/door selection,
+  eliminating its second placement-time copy. Keep ownership/capacity/duplicate
+  fences. Do not perform roaming updates on still-disabled reservations.
+- Live status distinguishes enabled actors, tracked/reserved slots, previous
+  completed sample, individual activation states, selected door/fallback and
+  confirmed enables. Controller build labels are 1204; storage schemas unchanged.
+
+EVIDENCE AND PRESERVATION
+- These are demonstrated code-path defects and controlled test failures, not
+  proof of the exact native engine cause of the reported v1.2.3 session. The
+  reported enabled value was explicitly a last-completed sample and may be stale.
+- All 19,941 previous FormIDs retained; all old NPC/reference/quest/package/VMAD
+  payloads unchanged. Only 58 display globals/header identify the candidate.
+  Append one FLST at local 0x2221E0; no new actors, placed refs or script properties.
+- Four controller PEX rebuilt; five helper PEX and startup SEQ byte-identical.
+  Existing variable/property names, types/defaults, pool indices and schemas
+  retained. Nighttime removal, orphan recovery, appearance RNG, destinations,
+  AI packages and v1.2.3's +33% running behavior retained.
+- Compiled-bytecode/native-boundary tests cover all 19, moving/visible players,
+  randomized/reused doors, local-query fallback, timed callbacks, native-enable
+  failure, disabled reservations, all 200 variants and typed old-save states.
+  Real Skyrim door queries, graphics, AI/pathfinding and ESS upgrades are untested.
+- Routine counting stays at most 76 checks across all settlements. Full recovery
+  still scans 15,200 potential references occasionally. Papyrus estimate: MODERATE,
+  based on code, not runtime benchmarks. No new dependencies or recurring polling.
+
+PLAYTEST: Remain outdoors in Whiterun, Solitude and Dragon Bridge for 60+ game
+minutes between 8 AM and 7 PM while walking/running or watching entrance areas.
+Allow further intervals to reach the daily target; check no excess arrivals,
+repeat visits, existing-save reloads, unchanged 7 PM entry and post-3 AM removal.
+
+
+More Brats — v1.2.5 Changelog — 11-17-2026
+PRIVATE PLAYTEST CANDIDATE; stable public release remains v1.1.0.
+
+LATEST AUTHOR EVIDENCE
+- v1.2.4 does activate children in tested open-world settlements. Children were
+  reported remaining around their arrival doors; walled-city children were not
+  visually observed. This supersedes the initial broad no-spawn report.
+- Requested and confirmed arrival interval: 7–14 IN-GAME MINUTES, not real seconds.
+
+CODE-LEVEL FINDINGS AND REPAIRS
+- Previous tests made native calls complete instantly. With injected native
+  delays and an interleaved recovery callback, released v1.2.4 bytecode expires
+  a still-progressing 120-second initialization worker and starts recovery again.
+  Existing long loops now renew the same lease at bounded progress checkpoints.
+  No new manager, timer cadence, serialized field or script is added. Stuck
+  workers retain timeout recovery; cancelled workers check ownership fences.
+- Normal Reconcile previously read every enabled flag in its adoption pass,
+  repeated that scan in RecoverOrphans, then ran FullEnabledCount a third time.
+  Reuse the complete adoption census; invoke existing orphan retirement only
+  when the scan actually finds enabled extras. Preserve adoption, state and
+  orphan visibility rules; routine tracked counting stays unchanged.
+- Prime the first existing game-time deadline BEFORE expensive setup, rather
+  than adding a new interval after initialization. Waiting across a morning
+  boundary still admits at most one overdue arrival. Shorten an older excessive
+  pending interval conservatively; keep existing actors, indices and population.
+- Use 7–14-minute randomized intervals for subsequent individual arrivals.
+- A full population previously disabled ArrivalFallbackDelay's real-time wake.
+  If game-time updates were delayed or absent, the last actor could remain in
+  its initial pause indefinitely. Mirror the EXISTING local daytime roaming
+  deadline with a real-time wake too. No faster polling cadence, extra script,
+  changed destination or forced movement. Scheduled timestamps still gate work.
+- Shared walled-city PlayerInCity had an outdoor early return when the world
+  query did not match, while ArrivalRelevant separately accepted the location.
+  Use the same existing location fallback for roaming as for arrival relevance.
+  No expansion of settlement boundaries or spawn territories.
+- Explicitly unregister an unelapsed real-time timer before replacing it, per
+  the vanilla registration contract. Earlier mocks always assumed replacement.
+
+PRESERVATION
+- All 19,942 FormIDs and record identities remain. Only 58 build-display globals
+  and plugin description change. NPC, actor reference, quest, VMAD, faction,
+  package, door list, master list, population and appearance payloads are intact.
+- No new serialized fields or properties. Existing variable names/types/defaults,
+  schemas 6/7, pool order and 200 appearance indices stay unchanged.
+- Four controller PEX rebuilt; five helper PEX and startup SEQ remain identical.
+  Forty donors, five outfits each, independent race/gender/outfit RNG, door-area
+  placement, +33% running behavior, 19 settlements and nighttime routines retained.
+- Native APIs are vanilla Skyrim. No SKSE, Address Library, SPID or new dependency.
+
+VALIDATION AND LIMITS
+- Independent ESP/PEX checks; compiled-code scenarios for all settlements,
+  outdoor motion, due arrivals, full-target roaming, location seams, slow-native
+  initialization, interrupted workers, timer replacement and existing saves.
+- Additional typed-state tests combine genuine v1.1.0 properties with the final
+  expanded plugin data, retaining old actors and enabling appended appearances.
+- Tested native delays/door geometry/events are synthetic inputs, not measured
+  Skyrim performance. Actual ESS migration, rendered actors, pathfinding and the
+  precise engine cause in the reported playtest remain unverified.
+- Papyrus estimate: MODERATE. Routine count remains at most 76 native enabled
+  checks across all settlements. Normal initialization/recovery removes two
+  redundant full-pool passes; occasional heavy work and native latency remain.
+
+PLAYTEST
+Use a backed-up existing save. Walk/run outdoors in the five walled cities and
+open-world settlements between 8 AM and 7 PM. Allow 7–14 game-minute intervals;
+then observe the last child after the target is full. Repeat visits/reloads
+and recheck unchanged 7 PM interiors and safe post-3 AM removal. See README.
+
+
+More Brats — v1.2.5 Timing Revision — 11-17-2026
+- Same version and build 1205. Arrival delays reduced from 7–14 to 3–7 IN-GAME
+  MINUTES across all 19 settlements. This section is authoritative for this ZIP.
+- Updated the initial, subsequent and retry delay draws, plus the older saved
+  pending-delay bound. Population limits and all other gameplay remain unchanged.
+- Tsoxer confirmed the preceding v1.2.5 build in Riverwood and Whiterun. This
+  revised timing still requires the planned thorough 19-settlement playtest.
+- ESP, startup SEQ, five helper PEX, FormIDs, serialized fields, appearance data,
+  AI packages, wandering, running and nighttime rules remain unchanged. Only
+  arrival-timing constants differ in the four controller PEX script objects.
+- Removed date-format instructions from the documents; retained actual dates.
+- Prior v1.2.5 ZIP remains separately downloadable. New archive:
+  MoreBrats-v1.2.5-Review-3-7min.zip.
+- Automated structural, compiled-script, old-state, timing-boundary and lifecycle
+  checks were repeated. Synthetic tests are not Skyrim execution or real ESS
+  loading. Code-based Papyrus classification remains MODERATE.
+
+
+More Brats — v1.2.6 Changelog — 11-18-2026
+Unpublished development build; stable public Nexus release remains v1.1.0.
+
+ARRIVAL LATENCY FINDINGS
+- Author testing found delayed but eventually successful arrivals. The delay
+  was first narrowed to walled cities; subsequent testing also found inconsistent
+  timing in unwalled settlements. No appearance-pool failure was established.
+- In the final v1.2.5 compiled code, a normal warm first arrival performed 210
+  IsDisabled checks, including a redundant 200-appearance slot scan before Enable.
+  A controlled load of 19 initialized, empty controllers performed 15,210 such
+  checks. These are native-call counts, not measured Skyrim execution times.
+- Same-cycle daytime departure from a settlement does not itself request actor
+  deletion. The existing retirement rules depend on the cycle/time and safety.
+- Native callback delivery is not an exact clock; game-time events can arrive
+  after waits or fast travel. The code costs are confirmed, but their precise
+  share of the author's 30–60-minute delay has not been measured in Skyrim.
+
+CORRECTIONS
+- For fully bound, audited pools, use existing tracked state and the serialized
+  worker instead of scanning all 200 unused appearances before every arrival.
+  The chosen actor must still be disabled and untracked before placement/enable.
+- On healthy save loads, validate tracked residents without unconditionally
+  rebinding and auditing the complete appearance pool. Missing storage, invalid
+  membership, disabled/pending reservations, unfinished workers, orphan flags and
+  explicit repair retain full reconciliation. No quest or actor reset is used.
+- Defer expensive setup in empty, irrelevant settlements. Saved repair requests
+  remain pending and are honored before their next relevant arrival.
+- Defer an overdue routine census until a pending arrival sequence finishes.
+  Explicit/incomplete-state recovery still runs before arrivals; full consistency
+  checks remain. Refresh the game clock after a yielding census.
+- Record the saved deadline, attempt start and confirmed enabled time separately.
+  The successful time is written only after native Enable returns and IsDisabled
+  confirms activation. Normal play has no additional notifications.
+
+PRESERVATION
+- All 19,942 existing FormIDs and record identities, NPCs, references, quests,
+  aliases, packages, factions, masters, appearance mappings and population ranges
+  remain. Only 58 build globals and the plugin description identify v1.2.6/1206.
+- Four controller PEX files changed; five helper PEX and startup SEQ are identical.
+  All old serialized names/types/defaults and schemas 6/7 remain. Added only one
+  load-check flag and three diagnostic timestamps. Existing residents are retained.
+- Forty donors, 200 variants, race/gender/outfit RNG, door-area placement, enhanced
+  running, roaming, evening travel and nighttime retirement rules are unchanged.
+- The arrival interval remains 3–7 IN-GAME MINUTES, not real-world seconds.
+  No new script, manager, polling cadence, custom asset or dependency was added.
+
+VALIDATION AND REMAINING TESTS
+- Independent plugin/PEX inspection; actual final bytecode exercised with final
+  ESP bindings for outdoor arrivals in all 19 settlements, moving players,
+  real-time fallback events, repeat city visits, save-state upgrades, failed native
+  enabling, recovery/adoption, caps, appearances and the existing night lifecycle.
+- Routine enabled counting remains at most 76 native checks across all maximum
+  populations. In the comparable warm first-arrival test, checks fell from 210
+  to 11. Initialization and exceptional recovery still do more work.
+- Papyrus estimate remains Moderate. Injected native delays and typed-state
+  transfers are simulations, not benchmarks or actual ESS/Skyrim execution.
+- Test v1.2.6 in Skyrim before any public release. In particular, compare scheduled
+  and actual arrivals while hopping between Whiterun, Riften and Windhelm, then
+  test Solitude, Markarth and open-world settlements without interior triggers.
+
+
+More Brats — v1.2.7 Changelog — 11-18-2026
+Unpublished development build; stable public release remains v1.1.0.
+
+TWO REQUESTED ADDITIONS
+- Prevent newly generated children from sharing a vanilla appearance-donor
+  FormID within the same settlement's active population. Five outfits belonging
+  to one donor count as one identity. Duplicate clothing colors remain allowed.
+  The same donor can be present in different settlements at the same time.
+- Restore interior-entry population preparation alongside v1.2.6's gradual
+  outdoor door arrivals. Prepare remaining slots at the unchanged v1.1.0 street
+  markers, without a door preference or an additional per-child interval.
+- Both paths use the SAME dailyPopulation, residents, fixed actor references,
+  reservations, worker lease and activation checks. An interior opportunity
+  fills only the shortfall; it never rolls a second population or exceeds the
+  day's selected target. Repeated entry/exit and queued callbacks share that cap.
+- Capture a quick interior visit for the existing deferred worker. Loading or
+  waiting inside a relevant interior can also prepare the current daytime roll.
+  Unrelated interiors, the 7 PM cutoff and the Skaal quest gate remain respected.
+
+APPEARANCE AND SAVE DETAILS
+- Resolve donor identity from immutable actor-reference IDs and existing pool
+  bindings, rather than trusting selectedVariant after a daily reset or adoption.
+  Handle signed Papyrus FormIDs at high load-order indices. All 15,200 reference
+  mappings are verified against the actual NPC TPLT donor FormIDs.
+- Preserve the existing race/gender/outfit rolls and all 40 donors/200 variants.
+  A duplicate donor is replaced by an unused donor in that race/gender group,
+  keeping the outfit. If the group is exhausted, choose another available group.
+  Strict donor uniqueness necessarily conditions race/gender availability.
+- Retain existing children and all saved fields/properties. Older already-active
+  duplicates are not forcibly removed or changed; new arrivals do not add to
+  them. They clear through the normal lifecycle. No new game or quest reset.
+- Add only an interior-opportunity flag and cycle number to serialized state.
+  A temporary 40-entry local donor mask is built only during an arrival attempt.
+
+PRESERVATION AND VALIDATION
+- All 19,942 record identities, NPC/reference/AI/quest payloads, populations,
+  masters, street/door destinations, running, 8 AM–7 PM arrival window, 7 PM indoor
+  routine and post-3 AM retirement rules remain. Only build globals/description
+  identify v1.2.7/1207. Four controller PEX rebuilt; five helper PEX and SEQ unchanged.
+- v1.2.6 timing and scan reductions remain. Routine enabled counting is still
+  bounded by 76 tracked checks at maximum populations; no new polling cadence.
+  Interior preparation is bounded by the existing daily target, at most nine.
+- Final ESP/PEX checks cover all 19 settlements, donor identities, outfit repeats,
+  original street bindings, gradual/interior paths, quick visits, repeated exits,
+  failed enabling, save-state transfers, caps and the unchanged night lifecycle.
+- Explicit overlapping-callback case: Whiterun target five, three gradual arrivals
+  plus two interior arrivals, with a callback during enabling; total remains five.
+- Papyrus assessment remains Moderate, based on code. Donor selection adds bounded
+  local work and at most eight other resident ID reads per arrival. Interior
+  preparation can create a short batch; actual queue latency is not benchmarked.
+- Tests execute compiled instructions with controlled native calls and typed
+  save states. Actual Skyrim callbacks, rendering, pathfinding, door transitions
+  and ESS loading still require the author's v1.2.7 playtest.

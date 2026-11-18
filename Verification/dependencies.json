@@ -22,5 +22,5 @@
     "optional_upstream_BSA_dependency": "lz4>=4.0, unused by this mod build"
   },
   "C++_toolchain_tested": "GCC 14.2, C++23, Linux x86-64/SSE4.2, CMake, Ninja",
-  "baseline": "Exact original More Brats v1.0.0 ESP/SEQ included; this is an incremental generator, not a from-zero historical source build."
+  "baseline": "Included owned More Brats v1.0.0 ESP/SEQ; original incremental C# chain v1.1.0 through v1.2.7 is supplied."
 }

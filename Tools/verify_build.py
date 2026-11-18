@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'Tools/support'),str(ROOT/'ThirdParty/esplib/src')]
 from pexcheck import Pex
 def verify(runtime=None):
- runtime=Path(runtime) if runtime else ROOT/'.build/work/build/v1.1.0/runtime'
+ runtime=Path(runtime) if runtime else ROOT/'.build/work/build/v1.2.7/runtime'
  expected=json.loads((ROOT/'Verification/released-runtime.json').read_text())
  source_ok=[];result={}
  for name,sha in expected['papyrus_source_sha256'].items():

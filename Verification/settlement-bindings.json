@@ -1,5 +1,5 @@
 {
-  "purpose": "Derived reference inventory from the released ESP; not reconstructed generator source or a build input.",
+  "purpose": "Derived inventory from the accepted v1.2.7 ESP; not reconstructed source.",
   "settlements": [
     {
       "quest_editor_id": "MB_Lifecycle",
@@ -1518,9 +1518,55 @@
               "alias": -1,
               "form": 50465203
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51417088
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50333696
+          },
+          {
+            "MB_PlayerAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50333696
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "quest_editor_id": "MB_StartupRecovery",
+      "local_form_id": "000855",
+      "bindings": {},
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50333781
+          },
+          {
+            "MB_Recovery": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50333696
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Markarth",
@@ -2938,9 +2984,32 @@
               "alias": -1,
               "form": 50467251
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51449856
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50335744
+          },
+          {
+            "MB_CityAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50335744
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Riften",
@@ -4606,9 +4675,32 @@
               "alias": -1,
               "form": 50471377
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51515392
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50339840
+          },
+          {
+            "MB_CityAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50339840
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Windhelm",
@@ -6238,9 +6330,32 @@
               "alias": -1,
               "form": 50475473
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51580928
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50343936
+          },
+          {
+            "MB_CityAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50343936
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Solitude",
@@ -8276,9 +8391,32 @@
               "alias": -1,
               "form": 50479629
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51646464
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50348032
+          },
+          {
+            "MB_CityAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50348032
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Dawnstar",
@@ -9478,9 +9616,32 @@
               "alias": -1,
               "form": 50483605
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51712000
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50352128
+          },
+          {
+            "MB_TownAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50352128
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Falkreath",
@@ -10686,9 +10847,32 @@
               "alias": -1,
               "form": 50487701
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51777536
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50356224
+          },
+          {
+            "MB_TownAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50356224
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Morthal",
@@ -11682,9 +11866,32 @@
               "alias": -1,
               "form": 50491767
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51843072
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50360320
+          },
+          {
+            "MB_TownAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50360320
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Winterhold",
@@ -12466,9 +12673,32 @@
               "alias": -1,
               "form": 50495833
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51908608
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50364416
+          },
+          {
+            "MB_TownAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50364416
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Riverwood",
@@ -13063,9 +13293,32 @@
               "alias": -1,
               "form": 50499899
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 51974144
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50368512
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50368512
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Rorikstead",
@@ -13672,9 +13925,32 @@
               "alias": -1,
               "form": 50503995
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52039680
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50372608
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50372608
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Ivarstead",
@@ -14469,9 +14745,32 @@
               "alias": -1,
               "form": 50508121
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52105216
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50376704
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50376704
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Karthwasten",
@@ -15054,9 +15353,32 @@
               "alias": -1,
               "form": 50512187
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52170752
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50380800
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50380800
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_DragonBridge",
@@ -16063,9 +16385,32 @@
               "alias": -1,
               "form": 50516343
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52236288
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50384896
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50384896
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_ShorsStone",
@@ -16660,9 +17005,32 @@
               "alias": -1,
               "form": 50520379
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52301824
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50388992
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50388992
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Kynesgrove",
@@ -17239,9 +17607,32 @@
               "alias": -1,
               "form": 50524475
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52367360
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50393088
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50393088
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_DarkwaterCrossing",
@@ -17818,9 +18209,32 @@
               "alias": -1,
               "form": 50528571
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52432896
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50397184
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50397184
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_Stonehills",
@@ -18397,9 +18811,32 @@
               "alias": -1,
               "form": 50532667
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52498432
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50401280
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50401280
+              }
+            }
+          }
+        ]
+      ]
     },
     {
       "quest_editor_id": "MB_SkaalVillage",
@@ -19195,9 +19632,32 @@
               "alias": -1,
               "form": 50536793
             }
-          ]
+          ],
+          "NamedDonorForms": {
+            "unused": 0,
+            "alias": -1,
+            "form": 52563968
+          }
         }
-      }
+      },
+      "aliases": [
+        [
+          {
+            "unused": 0,
+            "alias": 0,
+            "form": 50405376
+          },
+          {
+            "MB_VillageAlias": {
+              "Controller": {
+                "unused": 0,
+                "alias": -1,
+                "form": 50405376
+              }
+            }
+          }
+        ]
+      ]
     }
   ]
 }

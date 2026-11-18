@@ -17,6 +17,19 @@ Actor[] Property PoolRefs Auto
 Actor[] Property ImperialRefs Auto
 Actor[] Property BretonRefs Auto
 Actor[] Property RedguardRefs Auto
+; v1.2.7: appended donor references; old arrays/indices are unchanged.
+FormList Property NamedDonorForms Auto
+Actor[] donorActors0
+Int[] donorHidden0
+Actor[] donorActors1
+Int[] donorHidden1
+Actor[] donorActors2
+Int[] donorHidden2
+Actor[] donorActors3
+Int[] donorHidden3
+Actor[] donorActors4
+Int[] donorHidden4
+
 Int[] imperialHidden
 Int[] bretonHidden
 Int[] redguardHidden
@@ -114,10 +127,49 @@ Bool diagStorageReady = False
 String diagStorageFailure = ""
 Int diagPoolInputs = 0
 Int diagRoadInputs = 0
+Int diagNamedResolved = 0
+Int diagNamedIDRecovered = 0
+Int diagNamedMissing = 0
+Int diagNamedCatalogState = 0
+Int diagAppearanceFallbacks = 0
 
 ; One pending cell/location notification; saved field is additive.
 Bool transitionPending = False
 Int lastWorkerStage = 0
+
+
+; v1.2.7 additive state: absolute game days, never a new actor/reference pool.
+Float nextArrivalAt = 0.0
+Int arrivalScheduleCycle = -100000
+Bool arrivalWasRelevant = False
+Bool poolAudited = False
+Float nextPoolAuditAt = 0.0
+Int diagFullEnabled = -1
+
+; v1.2.7 additive diagnostic counters and an official clock binding only.
+GlobalVariable arrivalTimeScale
+Int diagRealUpdates = 0
+Int diagGameUpdates = 0
+
+; v1.2.7 additive queue/diagnostic scalars. No resident array layout changes.
+Bool transitionWakeArmed = False
+Int diagEnableConfirmed = 0
+Int diagPlacementRetries = 0
+; Arrival-only cache/diagnostics. Existing serialized fields are unchanged.
+FormList arrivalDoorTypes
+ObjectReference priorArrivalDoor
+ObjectReference diagArrivalDoor
+Bool diagDoorFallback = False
+
+; Additive v1.2.7 fields: old names, types, defaults and slot meanings stay intact.
+Bool loadResidentCheck = False
+Float diagArrivalDueAt = 0.0
+Float diagArrivalAttemptAt = 0.0
+Float diagArrivalEnabledAt = 0.0
+
+; v1.2.7: one interior opportunity, serviced by the EXISTING population worker.
+Bool interiorArrivalPending = False
+Int interiorArrivalCycle = -100000
 
 Event OnInit()
     RecordEvent(1)
@@ -126,14 +178,22 @@ Event OnInit()
     Wake()
 EndEvent
 Function Loaded()
+    transitionWakeArmed = False
     ; Do not clear a saved busy flag while a suspended stack may still resume.
-    repairRequested = True
+    ; A healthy serialized pool is already a complete census. Validate tracked
+    ; residents after loading; retain a full audit for missing/unsafe old state.
+    loadResidentCheck = True
+    If schemaVersion < 7 || !diagStorageReady || !poolAudited || bindingsPending || orphanPresent || processing
+        repairRequested = True
+    EndIf
     Log("load recovery/migration requested; saved schema=" + schemaVersion)
     Wake()
 EndFunction
 Function RecoveryPulse()
-    ; Called by the separate startup watchdog, which never owns child state.
-    Wake()
+    ; Preserve the watchdog's recovery role without waking an empty remote city.
+    If processing || repairRequested || ResidentCountSafe() > 0 || ArrivalRelevant()
+        Wake()
+    EndIf
 EndFunction
 Function Wake()
     UnregisterForUpdate()
@@ -141,21 +201,34 @@ Function Wake()
     RegisterForSingleUpdate(2.0)
 EndFunction
 Function Transition()
+    ; Capture an entry even when a quick exit precedes the deferred worker.
+    If Game.GetPlayer().IsInInterior() && ArrivalRelevant()
+        interiorArrivalPending = True
+        interiorArrivalCycle = CycleAt(Utility.GetCurrentGameTime())
+    EndIf
     transitionPending = True
-    ; The interior opportunity is serviced now, not two seconds after the
-    ; player could already have left. Same serialized worker as normal updates.
-    Service()
+    ; Coalesce moving-player notifications. Repeated events must not keep
+    ; pushing the same deferred wake two seconds into the future.
+    If !transitionWakeArmed
+        transitionWakeArmed = True
+        UnregisterForUpdate()
+        RegisterForSingleUpdate(2.0)
+    EndIf
 EndFunction
 Event OnUpdateGameTime()
+    diagGameUpdates += 1
     Service()
 EndEvent
 Event OnUpdate()
+    transitionWakeArmed = False
+    diagRealUpdates += 1
     Service()
 EndEvent
 Function Service()
     InitDiagnostics()
     If !DiagnosticGlobals || DiagnosticGlobals.Length != 17
         StorageFailure("DiagnosticGlobals", 17)
+        UnregisterForUpdate()
         RegisterForSingleUpdate(30.0)
         Return
     EndIf
@@ -170,6 +243,9 @@ Function Service()
             EndIf
         EndIf
     EndIf
+    If request == 2
+        ShowStatus()
+    EndIf
     Float now = Utility.GetCurrentRealTime()
     Bool recoveredLease = False
     If processing
@@ -182,10 +258,8 @@ Function Service()
         EndIf
         If now < leaseUntil
             Status(16, 1)
-            If request == 2
-                ShowStatus()
-            EndIf
-            RegisterForSingleUpdate(5.0)
+            UnregisterForUpdate()
+            RegisterForSingleUpdate(leaseUntil - now + 1.0)
             Return
         EndIf
         workEpoch += 1
@@ -201,6 +275,7 @@ Function Service()
     leaseUntil = now + 120.0
     Int ticket = workEpoch
     ; Arm the existing lease before native work; PlanNext replaces this on success.
+    UnregisterForUpdate()
     RegisterForSingleUpdate(125.0)
     Status(2)
     If recoveredLease
@@ -214,6 +289,31 @@ Function Service()
             NightMode.SetValue(1.0)
         EndIf
     EndIf
+    ; Empty remote settlements defer expensive setup/recovery until relevant.
+    ; Saved repair flags remain pending; no arrival can bypass that recovery.
+    ; Make this decision under the existing worker lease, never outside it.
+    If request != 3 && activeIndex < 0 && ResidentCountSafe() == 0 && !orphanPresent && !ArrivalRelevant()
+        If ticket == workEpoch
+            PlanDormant()
+            If ticket == workEpoch
+                processing = False
+                transitionWakeArmed = False
+                leaseArmed = False
+                If transitionPending
+                    UnregisterForUpdate()
+                    RegisterForSingleUpdate(0.1)
+                EndIf
+            EndIf
+        EndIf
+        Return
+    EndIf
+    If !WorkerProgress(ticket)
+        Return
+    EndIf
+    PrimeArrivalDeadline()
+    If ticket != workEpoch
+        Return
+    EndIf
     If EnsureSetup() && ticket == workEpoch
         Tick()
     EndIf
@@ -226,13 +326,12 @@ Function Service()
         PlanNext()
         If ticket == workEpoch
             processing = False
+            transitionWakeArmed = False
             leaseArmed = False
             If transitionPending
+                UnregisterForUpdate()
                 RegisterForSingleUpdate(0.1)
             EndIf
-        EndIf
-        If request == 2
-            ShowStatus()
         EndIf
     EndIf
 EndFunction
@@ -661,7 +760,7 @@ Bool Function EnsureSetup()
     If ticket != workEpoch
         Return False
     EndIf
-    If repairRequested || schemaVersion < 7
+    If repairRequested || schemaVersion < 7 || loadResidentCheck
         Status(4)
         Log("reconciling saved references; schema=" + schemaVersion + "; pool resolved=" + diagResolved)
         Reconcile()
@@ -670,7 +769,10 @@ Bool Function EnsureSetup()
         EndIf
         ; Commit only after caches, per-slot state and adoption are complete.
         schemaVersion = 7
+        ; Reconcile itself records full audits; a tracked-only load check must
+        ; not postpone an already-due periodic census.
         repairRequested = False
+        loadResidentCheck = False
         setupWarning = False
         activeIndex = -1
         If !announced
@@ -710,6 +812,7 @@ Function Reconcile()
     Int ticket = workEpoch
     Float stamp = Utility.GetCurrentGameTime()
     Int cycle = CycleAt(stamp)
+    Int poolSize = AppearancePoolSize()
     Int s = 0
     ; Keep each valid saved resident and its cycle/retirement state. Dedupe
     ; bookkeeping, never disable an actor just because two slots refer to it.
@@ -718,10 +821,15 @@ Function Reconcile()
             Return
         EndIf
         Actor saved = residents[s]
+        If saved == None && (lastArrivalCycle[s] == cycle || enableUntil[s] > 0.0)
+            repairRequested = True
+        ElseIf saved != None && saved.IsDisabled()
+            repairRequested = True
+        EndIf
         If saved != None
             Bool found = False
             Int n = 0
-            While n < AppearancePoolSize()
+            While n < poolSize && !found
                 If PoolActor(n) == saved
                     found = True
                 EndIf
@@ -739,6 +847,7 @@ Function Reconcile()
             EndIf
             If !found
                 residents[s] = None
+                repairRequested = True
             Else
                 If residentCycle[s] < -99999
                     residentCycle[s] = cycle
@@ -747,17 +856,37 @@ Function Reconcile()
                 If residentCycle[s] != cycle || !InWindow(HourAt(stamp))
                     retireSlot[s] = True
                 EndIf
-                RefreshResident(s, stamp)
+                If !saved.IsDisabled()
+                    RefreshResident(s, stamp)
+                EndIf
             EndIf
         EndIf
         s += 1
     EndWhile
     ; Scan this city's fixed references. A VM stack may
     ; have enabled a child before its saved array assignment was completed.
+    ; Our actor is reserved in residents BEFORE Enable. With a complete saved
+    ; census and no repair/orphan flag, validate those residents without another
+    ; native enabled-state call for every unused appearance reference.
+    If !repairRequested && poolAudited && schemaVersion >= 7 && !orphanPresent && !bindingsPending
+        Return
+    EndIf
+    Int census = 0
+    Bool extraEnabled = False
     Int i = 0
-    While i < AppearancePoolSize()
+    While i < poolSize
+        If i % 32 == 0 && !WorkerProgress(ticket)
+            Return
+        EndIf
         Actor child = PoolActor(i)
-        If child != None && !child.IsDisabled() && !ReferenceInUse(child)
+        Bool enabled = child != None && !child.IsDisabled()
+        If ticket != workEpoch
+            Return
+        EndIf
+        If enabled
+            census += 1
+        EndIf
+        If enabled && !ReferenceInUse(child)
             If ticket != workEpoch
                 Return
             EndIf
@@ -782,8 +911,13 @@ Function Reconcile()
                     retireSlot[slot] = True
                 EndIf
                 RefreshResident(slot, stamp)
-                Debug.Trace("[MoreBrats] v1.1.0: adopted saved enabled pool index " + i)
+                Debug.Trace("[MoreBrats] v1.2.7: adopted saved enabled pool index " + i)
+                StoreOrphanSamples(i, 0)
+            Else
+                extraEnabled = True
             EndIf
+        Else
+            StoreOrphanSamples(i, 0)
         EndIf
         i += 1
     EndWhile
@@ -801,7 +935,7 @@ Function Reconcile()
         If residents[s] == None && lastArrivalCycle[s] == cycle
             Int variant = selectedVariant[s]
             Actor pendingActor = None
-            If variant >= 0 && variant < 40 && enableUntil[s] > realNow
+            If variant >= 0 && variant < 200 && enableUntil[s] > realNow
                 pendingActor = PoolActor(PoolIndex(s, variant))
             EndIf
             If pendingActor != None && !ReferenceInUse(pendingActor)
@@ -824,7 +958,17 @@ Function Reconcile()
     If ticket != workEpoch
         Return
     EndIf
-    RecoverOrphans()
+    If !WorkerProgress(ticket)
+        Return
+    EndIf
+    poolAudited = True
+    nextPoolAuditAt = Utility.GetCurrentGameTime() + 0.25
+    diagFullEnabled = census
+    orphanPresent = extraEnabled
+    If extraEnabled
+        ; Existing exact orphan safety/retirement logic, only when necessary.
+        RecoverOrphans()
+    EndIf
 EndFunction
 
 Function RefreshResident(Int s, Float stamp)
@@ -849,8 +993,12 @@ Function RecoverOrphans()
     ; refs, route extras indoors and retire each ONLY under the visibility rule.
     Int ticket = workEpoch
     orphanPresent = False
+    Int poolSize = AppearancePoolSize()
     Int i = 0
-    While i < AppearancePoolSize()
+    While i < poolSize
+        If i % 32 == 0 && !WorkerProgress(ticket)
+            Return 
+        EndIf
         Actor child = PoolActor(i)
         If child != None && !child.IsDisabled() && !ReferenceInUse(child)
             If ticket != workEpoch
@@ -911,40 +1059,12 @@ Int Function RoadBlock(ObjectReference point)
 EndFunction
 
 Int Function ArrivalBlock(ObjectReference point)
-    If point == None
-        Return 13
-    EndIf
-    If point.IsDisabled()
-        Return 18
-    EndIf
-    Actor viewer = Game.GetPlayer()
-    If viewer.IsInInterior()
-        ; v0.1's proven off-screen cell-transition path. The destination comes
-        ; from fixed exterior VMAD bindings. It does not depend on attached-cell
-        ; state or GetWorldSpace returning a value for an unloaded marker.
-        Return 0
-    EndIf
-    WorldSpace playerWorld = viewer.GetWorldSpace()
-    If playerWorld == None
-        Return 15
-    EndIf
-    If playerWorld != CityWorld
-        Return 0
-    EndIf
-    Cell pointCell = point.GetParentCell()
-    Float separation = viewer.GetDistance(point)
-    If pointCell != None
-        If !pointCell.IsAttached() && separation >= 4096.0
-            Return 0
-        EndIf
-    ElseIf !point.Is3DLoaded() && separation >= 8192.0
-        Return 0
-    EndIf
-    Return 14
+    ; Arrival visibility, player distance and occupancy are intentionally irrelevant.
+    Return RoadBlock(point)
 EndFunction
 
 Bool Function SafeArrival(ObjectReference point)
-    Return RoadValid(point) && ArrivalBlock(point) == 0
+    Return RoadValid(point)
 EndFunction
 
 Bool Function SafeRemoval(Actor child, Int s)
@@ -1078,8 +1198,8 @@ Function BeginTrip(Int s, Float stamp)
     stallCount[s] = 0
     progressAt[s] = stamp + 6.0 / 1440.0
     deadline[s] = stamp + Utility.RandomFloat(55.0, 85.0) / 1440.0
-    If Utility.RandomInt(0, 99) < 25
-        runUntil[s] = stamp + Utility.RandomFloat(2.0, 6.0) / 1440.0
+    If Utility.RandomInt(0, 9999) < 3325
+        runUntil[s] = stamp + Utility.RandomFloat(2.66, 7.98) / 1440.0
         SetPhase(s, 2, True)
     Else
         SetPhase(s, 1, True)
@@ -1170,21 +1290,32 @@ Bool Function ReferenceInUse(Actor child)
 EndFunction
 ; New city pools use ten fixed references per slot; Whiterun is untouched.
 Int Function PoolIndex(Int slot, Int variant)
+    If variant >= 40
+        Return (MaxPopulation * 40) + (variant - 40) * MaxPopulation + slot
+    EndIf
     If variant >= 10
         Return (variant / 10) * (MaxPopulation * 10) + slot * 10 + variant % 10
     EndIf
     Return slot * 10 + variant
 EndFunction
 Int Function SlotFromPoolIndex(Int index)
+    If index >= (MaxPopulation * 40)
+        Return (index - (MaxPopulation * 40)) % MaxPopulation
+    EndIf
     If index >= (MaxPopulation * 10)
         Return (index % (MaxPopulation * 10)) / 10
     EndIf
     Return index / 10
 EndFunction
 Bool Function PoolSlotDisabled(Int s)
+    Int ticket = workEpoch
     Int v = 0
-    While v < 40
-        If PoolActor(PoolIndex(s, v)) != None && !PoolActor(PoolIndex(s, v)).IsDisabled()
+    While v < 200
+        If v % 32 == 0 && !WorkerProgress(ticket)
+            Return False
+        EndIf
+        Actor candidate = PoolActor(PoolIndex(s, v))
+        If candidate != None && !candidate.IsDisabled()
             Return False
         EndIf
         v += 1
@@ -1211,6 +1342,8 @@ Bool Function ClearArrivalPoint(Int index, Int slot)
 EndFunction
 Function TryArrival(Int s, Int cycle)
     Int ticket = workEpoch
+    diagArrivalDueAt = nextArrivalAt
+    diagArrivalAttemptAt = Utility.GetCurrentGameTime()
     diagSlot = s
     diagGoal = -1
     diagSelectedActor = None
@@ -1232,10 +1365,19 @@ Function TryArrival(Int s, Int cycle)
     EndIf
     Status(8)
     Log("spawn attempt; slot=" + s + "; cycle=" + cycle, True)
-    If !PoolSlotDisabled(s)
-        repairRequested = True
-        Defer(s, 21, "slot contains an enabled reference awaiting adoption/retirement")
-        Return
+    ; The completed full census and serialized single writer already establish
+    ; unused-slot safety. Keep the 200-reference check for exceptional/incomplete
+    ; state, not as extra native work in front of every scheduled arrival.
+    If !poolAudited || repairRequested || bindingsPending
+        Bool slotDisabled = PoolSlotDisabled(s)
+        If ticket != workEpoch
+            Return
+        EndIf
+        If !slotDisabled
+            repairRequested = True
+            Defer(s, 21, "slot contains an enabled reference awaiting adoption/retirement")
+            Return
+        EndIf
     EndIf
     If selectedVariant[s] < 0
         Int race = Utility.RandomInt(1, 4)
@@ -1247,13 +1389,16 @@ Function TryArrival(Int s, Int cycle)
             selectedVariant[s] = 6 + gender * 2 + clothing - 3
         EndIf
         selectedVariant[s] += (race - 1) * 10
+        selectedVariant[s] = SelectDonorVariant(race, gender, clothing, selectedVariant[s])
     EndIf
     If PoolActor(PoolIndex(s, selectedVariant[s])) == None
-        Int variantOffset = Utility.RandomInt(0, 39)
+        diagAppearanceFallbacks += 1
+        Log("appearance binding unavailable; selected variant=" + selectedVariant[s] + "; using existing per-slot fallback")
+        Int variantOffset = Utility.RandomInt(0, 199)
         Int v = 0
         selectedVariant[s] = -1
-        While v < 40 && selectedVariant[s] < 0
-            Int candidateVariant = (variantOffset + v) % 40
+        While v < 200 && selectedVariant[s] < 0
+            Int candidateVariant = (variantOffset + v) % 200
             If PoolActor(PoolIndex(s, candidateVariant)) != None
                 selectedVariant[s] = candidateVariant
             EndIf
@@ -1264,122 +1409,66 @@ Function TryArrival(Int s, Int cycle)
             Return
         EndIf
     EndIf
+    ; All five colors of one donor share a key. Include saved carry-overs and
+    ; reserved references; daily selectedVariant values alone are not identities.
+    Bool[] usedDonors = new Bool[40]
+    If !usedDonors || usedDonors.Length != 40
+        Defer(s, 30, "arrival donor storage unavailable")
+        Return
+    EndIf
+    Int peer = 0
+    While peer < MaxPopulation
+        Actor existing = residents[peer]
+        If existing != None && peer != s
+            Int actualVariant = VariantForActor(existing)
+            Int key = DonorKey(actualVariant)
+            If key < 0
+                Defer(s, 46, "cannot identify saved resident donor; slot=" + peer)
+                Return
+            EndIf
+            usedDonors[key] = True
+        EndIf
+        peer += 1
+    EndWhile
+    If ticket != workEpoch
+        Return
+    EndIf
+    selectedVariant[s] = UniqueVariant(s, selectedVariant[s], usedDonors)
+    If selectedVariant[s] < 0
+        Defer(s, 45, "no unused resolved donor available for this settlement")
+        Return
+    EndIf
     Actor chosen = PoolActor(PoolIndex(s, selectedVariant[s]))
     diagSelectedActor = chosen
     If chosen == None
         Defer(s, 11, "actor readback returned None; variant=" + selectedVariant[s])
         Return
     EndIf
+    If !chosen.IsDisabled()
+        repairRequested = True
+        Defer(s, 21, "selected actor is unexpectedly enabled; full reconciliation requested")
+        Return
+    EndIf
     If ReferenceInUse(chosen)
         Defer(s, 25, "selected actor is already tracked in another resident slot")
         Return
     EndIf
-    diagTargetContext = "TryArrival.road selection"
+    diagTargetContext = "TryArrival.random exterior door / existing outdoor ground"
     Int index = -1
-    Int offset = Utility.RandomInt(0, RoadIDs.Length - 1)
-    Int tries = 0
-    While tries < RoadIDs.Length && index < 0
-        Int candidate = (offset + tries) % RoadIDs.Length
-        diagGoal = candidate
-        diagSelectedPoint = roads[candidate]
-        If SafeArrival(roads[candidate]) && ClearArrivalPoint(candidate, s)
-            index = candidate
-        EndIf
-        tries += 1
-    EndWhile
+    If interiorArrivalPending
+        diagTargetContext = "TryArrival.v110 interior opportunity / original street marker"
+        index = StreetArrivalIndex()
+    Else
+        index = DoorArrivalIndex()
+    EndIf
     If index < 0
-        Int reason = 19
-        Bool valid = False
-        Int n = 0
-        While n < RoadIDs.Length
-            If RoadValid(roads[n])
-                valid = True
-                Int block = ArrivalBlock(roads[n])
-                If block != 0
-                    reason = block
-                EndIf
-            ElseIf !valid
-                reason = RoadBlock(roads[n])
-            EndIf
-            n += 1
-        EndWhile
-        Defer(s, reason, "no admissible free destination; refs=" + diagRoads + " road refs resolved; 13=missing, 14=loaded exterior, 15=player world unavailable, 16=interior, 17=wrong world, 18=disabled, 19=spacing")
+        Defer(s, 19, "no valid existing outdoor ground reference; door fallback also unavailable")
         Return
     EndIf
-    ObjectReference point = roads[index]
-    diagGoal = index
-    diagSelectedPoint = point
-    If point == None
-        Defer(s, 13, "selected road readback returned None")
-        Return
-    EndIf
-    If !DayAIReady(s, index, "TryArrival.day AI before enable")
-        Return
-    EndIf
-    diagSelectedActor = chosen
-    diagSelectedPoint = point
-    Status(9)
-    Log("spawn selected; slot=" + s + "; ref=" + chosen + "; destination=" + point, True)
-    If ticket != workEpoch || !chosen.IsDisabled() || ReferenceInUse(chosen)
-        Return
-    EndIf
-    chosen.MoveTo(point, 0.0, 0.0, 0.0, True)
-    Status(10)
-    Float stamp = Utility.GetCurrentGameTime()
     If ticket != workEpoch
         Return
     EndIf
-    ; Actor MoveTo is latent: schedule/visibility/occupancy checks repeat.
-    If !Daylight(HourAt(stamp)) || CycleAt(stamp) != cycle
-        Defer(s, 23, "schedule changed during placement; captured cycle=" + cycle + "; now cycle=" + CycleAt(stamp) + "; hour=" + HourAt(stamp))
-        Return
-    EndIf
-    diagTargetContext = "TryArrival.post-MoveTo safety"
-    If !SafeArrival(point)
-        Defer(s, 24, "post-MoveTo safety changed; road=" + RoadBlock(point) + "; arrival=" + ArrivalBlock(point))
-        Return
-    EndIf
-    ; The validated exterior destination and repeated separate-cell safety
-    ; establish the arrival path, as in v0.1. Do not gate enabling on a second
-    ; parent-cell/world query of a disabled actor immediately after MoveTo.
-    If orphanPresent || ResidentCount() >= dailyPopulation || !PoolSlotDisabled(s) || ReferenceInUse(chosen) || !ClearArrivalPoint(index, s)
-        Return
-    EndIf
-    residents[s] = chosen
-    residentCycle[s] = cycle
-    lastArrivalCycle[s] = cycle
-    arrivalIndex[s] = index
-    retireSlot[s] = False
-    disablingSlot[s] = False
-    hiddenCount[s] = 0
-    destination[s] = index
-    priorDestination[s] = -1
-    deadline[s] = stamp + Utility.RandomFloat(2.0, 8.0) / 1440.0
-    SetPhase(s, 0)
-    If ticket != workEpoch || !Daylight(HourAt(Utility.GetCurrentGameTime())) || CycleAt(Utility.GetCurrentGameTime()) != cycle || !SafeArrival(point)
-        If ticket == workEpoch
-            residents[s] = None
-            lastArrivalCycle[s] = -100000
-        EndIf
-        Return
-    EndIf
-    Float enableStart = Utility.GetCurrentRealTime()
-    ; Safety natives above may yield. Recheck ownership after the LAST one.
-    If ticket != workEpoch
-        Return
-    EndIf
-    enableUntil[s] = enableStart + 120.0
-    chosen.EnableNoWait(False)
-    If ticket != workEpoch
-        repairRequested = True
-        RegisterForSingleUpdate(1.0)
-        Return
-    EndIf
-    deferredReason[s] = 0
-    Status(11)
-    Log("enable requested; slot=" + s + "; ref=" + chosen + "; destination=" + point)
-    chosen.EvaluatePackage()
-    Log("AI EvaluatePackage requested after enable; slot=" + s, True)
+    PlaceArrival(s, cycle, chosen, index)
 EndFunction
 
 Bool Function PlayerInCity()
@@ -1419,8 +1508,6 @@ Function Tick()
     Int cycle = CycleAt(stamp)
     Int ticket = workEpoch
     Bool relevant = PlayerInCity()
-    ; Prepare arrivals while the player is elsewhere, as Whiterun already does.
-    ; Only scripted daytime roaming remains gated by city relevance.
     If Daylight(hour)
         Status(13)
     ElseIf InWindow(hour)
@@ -1497,12 +1584,10 @@ Function Tick()
                     EndIf
                 ElseIf !Daylight(hour)
                     SetPhase(s, 3)
-                ElseIf relevant
+                ElseIf relevant && !child.IsDisabled()
                     UpdateRoaming(s, stamp)
                 EndIf
             EndIf
-        ElseIf s < dailyPopulation && Daylight(hour) && lastArrivalCycle[s] != cycle
-            TryArrival(s, cycle)
         EndIf
         ; Native calls may yield; a cancelled worker must stop before later slots.
         If ticket != workEpoch
@@ -1516,6 +1601,8 @@ Function Tick()
         EndIf
         s += 1
     EndWhile
+    ; One serialized due arrival per callback, never a missed-event burst.
+    ProcessArrival()
     If !Daylight(hour) && ResidentCount() == 0
         Status(7, 20)
     EndIf
@@ -1526,13 +1613,20 @@ Function PlanNext()
     UnregisterForUpdateGameTime()
     If schemaVersion < 7 || repairRequested
         If diagStorageReady
+            UnregisterForUpdate()
             RegisterForSingleUpdate(1.0)
         Else
+            UnregisterForUpdate()
             RegisterForSingleUpdate(30.0)
         EndIf
         Return
     EndIf
-    If !PlayerInCity()
+    If !ArrivalRelevant() && ResidentCountSafe() == 0 && !orphanPresent
+        PlanDormant()
+        Return
+    EndIf
+    If !ArrivalRelevant()
+        UnregisterForUpdate()
         RegisterForSingleUpdate(120.0)
         ; Empty cities also need the next08:00 game-time boundary.
         Float hourAway = HourAt(Utility.GetCurrentGameTime())
@@ -1569,7 +1663,6 @@ Function PlanNext()
         delta = boundary
     EndIf
     Bool retirementPending = orphanPresent
-    Bool arrivalPending = False
     Int s = 0
     While s < MaxPopulation
         If residents[s] != None
@@ -1589,23 +1682,49 @@ Function PlanNext()
                     delta = until
                 EndIf
             EndIf
-        ElseIf s < dailyPopulation && lastArrivalCycle[s] != CycleAt(stamp) && Daylight(hour)
-            arrivalPending = True
         EndIf
         s += 1
     EndWhile
+    If Daylight(hour) && ArrivalRelevant() && nextArrivalAt > 0.0 && HasPendingArrivals()
+        Float arrivalDelta = (nextArrivalAt - stamp) * 24.0
+        If arrivalDelta < delta
+            delta = arrivalDelta
+        EndIf
+    EndIf
     ; Preserve the documented safe lower bound for game-time update intervals.
     If delta < 0.05
         delta = 0.05
     EndIf
     RegisterForSingleUpdateGameTime(delta)
     If retirementPending
+        UnregisterForUpdate()
         RegisterForSingleUpdate(10.0)
-    ElseIf arrivalPending
-        If Game.GetPlayer().IsInInterior()
-            RegisterForSingleUpdate(5.0)
-        Else
-            RegisterForSingleUpdate(30.0)
+    Else
+        Float fallback = ArrivalFallbackDelay()
+        If Daylight(hour) && ResidentCountSafe() > 0
+            If arrivalTimeScale == None
+                arrivalTimeScale = Game.GetFormFromFile(0x3A, "Skyrim.esm") as GlobalVariable
+            EndIf
+            If arrivalTimeScale != None
+                Float scale = arrivalTimeScale.GetValue()
+                If scale > 0.0
+                    Float roamingWake = delta * 3600.0 / scale
+                    If roamingWake < 2.0
+                        roamingWake = 2.0
+                    EndIf
+                    If fallback <= 0.0 || roamingWake < fallback
+                        fallback = roamingWake
+                    EndIf
+                EndIf
+            EndIf
+        EndIf
+        Float confirmation = PendingEnableDelay()
+        If confirmation > 0.0 && (fallback <= 0.0 || confirmation < fallback)
+            fallback = confirmation
+        EndIf
+        If fallback > 0.0
+            UnregisterForUpdate()
+            RegisterForSingleUpdate(fallback)
         EndIf
     EndIf
 EndFunction
@@ -1627,9 +1746,9 @@ Function InitDiagnostics()
         EndIf
         n += 1
     EndWhile
-    WriteDiagnostic(10, 1100.0)
-    WriteDiagnostic(11, 1100.0)
-    WriteDiagnostic(16, 1100.0)
+    WriteDiagnostic(10, 1207.0)
+    WriteDiagnostic(11, 1207.0)
+    WriteDiagnostic(16, 1207.0)
 EndFunction
 Function WriteDiagnostic(Int index, Float value)
     If (DiagnosticGlobals as Bool) && DiagnosticGlobals.Length == 17 && DiagnosticGlobals[index] != None
@@ -1655,7 +1774,7 @@ Function Log(String message, Bool verbose = False)
         allowed = DiagnosticGlobals[0].GetValue() == 1.0
     EndIf
     If allowed
-        Debug.Trace("[MoreBrats] v1.1.0 [" + CityName + "] " + message)
+        Debug.Trace("[MoreBrats] v1.2.7 [" + CityName + "] " + message)
     EndIf
 EndFunction
 Function Defer(Int slot, Int reason, String explanation)
@@ -1668,10 +1787,31 @@ Function Defer(Int slot, Int reason, String explanation)
 EndFunction
 Int Function EnabledCount()
     Int count = 0
+    If (residents as Bool) && residents.Length == 9
+        Int s = 0
+        While s < MaxPopulation
+            Actor child = residents[s]
+            If child != None && !child.IsDisabled()
+                count += 1
+            EndIf
+            s += 1
+        EndWhile
+    EndIf
+    Return count
+EndFunction
+
+Int Function FullEnabledCount()
+    Int ticket = workEpoch
+    Int count = 0
     If (pool as Bool)
         Int n = 0
-        While n < AppearancePoolSize()
-            If PoolActor(n) != None && !PoolActor(n).IsDisabled()
+        Int poolSize = AppearancePoolSize()
+        While n < poolSize
+        If n % 32 == 0 && !WorkerProgress(ticket)
+            Return -1
+        EndIf
+            Actor candidate = PoolActor(n)
+            If candidate != None && !candidate.IsDisabled()
                 count += 1
             EndIf
             n += 1
@@ -1707,17 +1847,47 @@ Int Function ResidentCountSafe()
     Return ResidentCount()
 EndFunction
 Function ShowStatus()
-    String message = "[MoreBrats] v1.1.0 " + CityName + "\nQuest running=" + IsRunning() + "; schema=" + schemaVersion
+    ; Report the last completed audit without rescanning thousands of actors
+    ; before the requested popup. Current stage/storage fields remain live.
+    Int liveEnabled = EnabledCount()
+    Int snapshotEnabled = -1
+    If (DiagnosticGlobals as Bool) && DiagnosticGlobals.Length == 17
+        If DiagnosticGlobals[4] != None
+            snapshotEnabled = DiagnosticGlobals[4].GetValue() as Int
+        EndIf
+    EndIf
+    String message = "[MoreBrats] v1.2.7 " + CityName + "\nQuest running=" + IsRunning() + "; schema=" + schemaVersion
     message += "\nPlayer relevant=" + PlayerInCity() + "; range=" + MinPopulation + ".." + MaxPopulation
     message += "\nStage=" + diagStage + "; reason=" + diagReason + "; ticks=" + diagTicks
-    message += "\nPopulation=" + dailyPopulation + "; enabled=" + EnabledCount() + "; tracked=" + ResidentCountSafe()
+    message += "\nPopulation=" + dailyPopulation + "; enabled NOW=" + liveEnabled + "; tracked/reserved=" + ResidentCountSafe() + "; previous sample=" + snapshotEnabled
     Int roadCount = 0
     If (RoadIDs as Bool)
         roadCount = RoadIDs.Length
     EndIf
     message += "\nPool=" + diagResolved + "/" + AppearancePoolSize() + "; roads=" + diagRoads + "/" + roadCount
     message += "\nResolved inputs=" + diagPoolInputs + "; road inputs=" + diagRoadInputs
+    message += "\nAppended bindings: resolved=" + diagNamedResolved + "; stable-ID recovered=" + diagNamedIDRecovered + "; missing=" + diagNamedMissing
+    message += "; catalog=" + diagNamedCatalogState + " (0=unavailable,1=valid,2=wrong size)"
+    message += "\nAppearance fallback attempts=" + diagAppearanceFallbacks
+    If (selectedVariant as Bool) && diagSlot >= 0 && diagSlot < selectedVariant.Length
+        message += "; selected variant=" + selectedVariant[diagSlot]
+    EndIf
     message += "\nRuntime storage ready=" + diagStorageReady + "; failure=" + diagStorageFailure
+    message += "\nArrivals: due(game days)=" + nextArrivalAt + "; cycle=" + arrivalScheduleCycle + "; relevant=" + ArrivalRelevant()
+    message += "\nEnabled sample counts tracked residents; last full census=" + diagFullEnabled + "; next audit(game days)=" + nextPoolAuditAt
+    message += "\nArrival 42=waiting for game-time arrival; 44=Enable returned but actor disabled"
+    message += "\nArrival exterior door=" + diagArrivalDoor + "; road fallback=" + diagDoorFallback
+    message += "\nConfirmed enables this script=" + diagEnableConfirmed + "; invalid placement retries=" + diagPlacementRetries
+    message += "\nPer-slot state=" + ActivationStates()
+    message += "\nInterior preparation pending=" + interiorArrivalPending + "; cycle=" + interiorArrivalCycle
+    message += "\nDonor reasons: 45=no unused bound donor; 46=unknown resident identity"
+    message += "\nLast arrival: due=" + diagArrivalDueAt + "; attempt=" + diagArrivalAttemptAt + "; enabled=" + diagArrivalEnabledAt
+    message += "\nLast successful enable game time is recorded only AFTER Enable and IsDisabled confirmation."
+    message += "\nCallbacks: real=" + diagRealUpdates + "; game=" + diagGameUpdates
+    message += "\nNow(game days)=" + Utility.GetCurrentGameTime() + "; due in(game min)=" + (nextArrivalAt - Utility.GetCurrentGameTime()) * 1440.0
+    message += "\nPlayer world=" + Game.GetPlayer().GetWorldSpace() + "; expected world=" + CityWorld
+    message += "\nPlayer location=" + Game.GetPlayer().GetCurrentLocation()
+    message += "\nDeadline fallback clock=" + arrivalTimeScale
     message += "\nLast non-busy stage=" + lastWorkerStage
     message += "\nTransition queued=" + transitionPending + "; lease remaining=" + (leaseUntil - Utility.GetCurrentRealTime())
     message += "\nBusy=" + processing + "; epoch=" + workEpoch + "; lease age=" + (Utility.GetCurrentRealTime() - leaseStart)
@@ -1726,8 +1896,8 @@ Function ShowStatus()
     message += "\nLast target check=" + diagTargetContext + "; lookup=" + diagLookupResult
     message += "\nExpected=" + diagLookupFile + "; local=" + diagExpectedID + "; raw=" + diagRawLookup
     message += "\nSelected ref=" + diagSelectedActor + "\nRoad destination=" + diagSelectedPoint
-    message += "\nArrivals prepare off-city; relevance gates roaming only."
-    message += "\n14=loaded exterior;19=no free road;21=reconcile;24=post-MoveTo safety;91/30=array failure"
+    message += "\nArrivals require local relevance; suspended deadlines are retained."
+    message += "\n19=no free road;21=reconcile;24=post-MoveTo safety;40=distance;41=LOS;42=not due;91/30=array failure"
     Debug.MessageBox(message)
 EndFunction
 String Function SlotCodes(Int[] codes)
@@ -1815,24 +1985,42 @@ EndFunction
 
 ; Additive appearance storage only. Legacy Nord arrays/indices stay unchanged.
 Int Function AppearancePoolSize()
-    Return (MaxPopulation * 10) * 4
+    Return (MaxPopulation * 40) + (MaxPopulation * 160)
 EndFunction
 Actor Function PoolActor(Int index)
     If index < 0 || index >= AppearancePoolSize()
         Return None
     EndIf
+    If index >= (MaxPopulation * 40)
+        Return DonorActorRead(index - (MaxPopulation * 40))
+    EndIf
     Int group = index / (MaxPopulation * 10)
     Int localIndex = index % (MaxPopulation * 10)
     If group == 0
+        If !pool || localIndex >= pool.Length
+            Return None
+        EndIf
         Return pool[localIndex]
     ElseIf group == 1
+        If !ImperialRefs || localIndex >= ImperialRefs.Length
+            Return None
+        EndIf
         Return ImperialRefs[localIndex]
     ElseIf group == 2
+        If !BretonRefs || localIndex >= BretonRefs.Length
+            Return None
+        EndIf
         Return BretonRefs[localIndex]
     EndIf
-    Return RedguardRefs[localIndex]
+    If !RedguardRefs || localIndex >= RedguardRefs.Length
+            Return None
+        EndIf
+        Return RedguardRefs[localIndex]
 EndFunction
 Int Function OrphanSamples(Int index)
+    If index >= (MaxPopulation * 40)
+        Return DonorHiddenRead(index - (MaxPopulation * 40))
+    EndIf
     Int group = index / (MaxPopulation * 10)
     Int localIndex = index % (MaxPopulation * 10)
     If group == 0
@@ -1845,6 +2033,10 @@ Int Function OrphanSamples(Int index)
     Return redguardHidden[localIndex]
 EndFunction
 Function StoreOrphanSamples(Int index, Int samples)
+    If index >= (MaxPopulation * 40)
+        DonorHiddenWrite(index - (MaxPopulation * 40), samples)
+        Return
+    EndIf
     Int group = index / (MaxPopulation * 10)
     Int localIndex = index % (MaxPopulation * 10)
     If group == 0
@@ -1906,9 +2098,10 @@ Bool Function EnsureAppearanceStorage()
         EndIf
         repairRequested = True
     EndIf
-    Return True
+    Return EnsureNamedDonorStorage()
 EndFunction
 Bool Function ResolveAppearancePools()
+    Int ticket = workEpoch
     Int n0 = 0
     While n0 < (MaxPopulation * 10)
         Actor candidate0 = ImperialRefs[n0]
@@ -1966,5 +2159,981 @@ Bool Function ResolveAppearancePools()
         EndIf
         n2 += 1
     EndWhile
+    diagNamedResolved = 0
+    diagNamedIDRecovered = 0
+    diagNamedMissing = 0
+    diagNamedCatalogState = 0
+    Bool namedCatalogValid = False
+    If NamedDonorForms != None
+        namedCatalogValid = NamedDonorForms.GetSize() == (MaxPopulation * 160)
+        If namedCatalogValid
+            diagNamedCatalogState = 1
+        Else
+            diagNamedCatalogState = 2
+        EndIf
+    EndIf
+    Int namedIndex = 0
+    While namedIndex < (MaxPopulation * 160)
+        If namedIndex % 32 == 0 && !WorkerProgress(ticket)
+            Return False
+        EndIf
+        ; Match v1.1.0's pool contract: keep valid saved bindings first,
+        ; then try editor binding, then the verified stable local actor ID.
+        Actor namedActor = DonorActorRead(namedIndex)
+        If namedActor == None && namedCatalogValid
+            namedActor = NamedDonorForms.GetAt(namedIndex) as Actor
+        EndIf
+        If namedActor == None
+            namedActor = Game.GetFormFromFile((0x100000 + ConfigBase * 16) + 0x2000 + namedIndex, "MoreBrats.esp") as Actor
+            If namedActor != None
+                diagNamedIDRecovered += 1
+            EndIf
+        EndIf
+        DonorActorWrite(namedIndex, namedActor)
+        If DonorActorRead(namedIndex) != namedActor
+            StorageFailure("named donor binding readback", (MaxPopulation * 160), 31)
+            Return False
+        EndIf
+        If namedActor != None
+            diagNamedResolved += 1
+            diagResolved += 1
+            diagPoolInputs += 1
+        Else
+            diagNamedMissing += 1
+            bindingsPending = True
+        EndIf
+        namedIndex += 1
+    EndWhile
     Return True
+EndFunction
+
+
+; Independent donor draw inside the already selected race/gender.
+Int Function SelectDonorVariant(Int race, Int gender, Int clothing, Int legacyVariant)
+    If race == 1 && gender == 0
+        Int donor10 = Utility.RandomInt(0, 15)
+        If donor10 > 0
+            Return 40 + (donor10 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 1 && gender == 1
+        Int donor11 = Utility.RandomInt(0, 12)
+        If donor11 > 0
+            Return 115 + (donor11 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 2 && gender == 0
+        Int donor20 = Utility.RandomInt(0, 1)
+        If donor20 > 0
+            Return 175 + (donor20 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 2 && gender == 1
+        Int donor21 = Utility.RandomInt(0, 1)
+        If donor21 > 0
+            Return 180 + (donor21 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 3 && gender == 0
+        Int donor30 = Utility.RandomInt(0, 1)
+        If donor30 > 0
+            Return 185 + (donor30 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 4 && gender == 0
+        Int donor40 = Utility.RandomInt(0, 1)
+        If donor40 > 0
+            Return 190 + (donor40 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    If race == 4 && gender == 1
+        Int donor41 = Utility.RandomInt(0, 1)
+        If donor41 > 0
+            Return 195 + (donor41 - 1) * 5 + clothing
+        EndIf
+        Return legacyVariant
+    EndIf
+    Return legacyVariant
+EndFunction
+
+Bool Function EnsureNamedDonorStorage()
+    If NamedDonorForms == None
+        NamedDonorForms = Game.GetFormFromFile((0x100000 + ConfigBase * 16) + 0x1000, "MoreBrats.esp") as FormList
+    EndIf
+    If (donorActors0 as Bool) && donorActors0.Length != 128
+        StorageFailure("donorActors0 saved length", 128)
+        Return False
+    EndIf
+    If !donorActors0
+        donorActors0 = new Actor[128]
+        If !donorActors0 || donorActors0.Length != 128
+            StorageFailure("donorActors0", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorHidden0 as Bool) && donorHidden0.Length != 128
+        StorageFailure("donorHidden0 saved length", 128)
+        Return False
+    EndIf
+    If !donorHidden0
+        donorHidden0 = new Int[128]
+        If !donorHidden0 || donorHidden0.Length != 128
+            StorageFailure("donorHidden0", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorActors1 as Bool) && donorActors1.Length != 128
+        StorageFailure("donorActors1 saved length", 128)
+        Return False
+    EndIf
+    If !donorActors1
+        donorActors1 = new Actor[128]
+        If !donorActors1 || donorActors1.Length != 128
+            StorageFailure("donorActors1", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorHidden1 as Bool) && donorHidden1.Length != 128
+        StorageFailure("donorHidden1 saved length", 128)
+        Return False
+    EndIf
+    If !donorHidden1
+        donorHidden1 = new Int[128]
+        If !donorHidden1 || donorHidden1.Length != 128
+            StorageFailure("donorHidden1", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorActors2 as Bool) && donorActors2.Length != 128
+        StorageFailure("donorActors2 saved length", 128)
+        Return False
+    EndIf
+    If !donorActors2
+        donorActors2 = new Actor[128]
+        If !donorActors2 || donorActors2.Length != 128
+            StorageFailure("donorActors2", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorHidden2 as Bool) && donorHidden2.Length != 128
+        StorageFailure("donorHidden2 saved length", 128)
+        Return False
+    EndIf
+    If !donorHidden2
+        donorHidden2 = new Int[128]
+        If !donorHidden2 || donorHidden2.Length != 128
+            StorageFailure("donorHidden2", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorActors3 as Bool) && donorActors3.Length != 128
+        StorageFailure("donorActors3 saved length", 128)
+        Return False
+    EndIf
+    If !donorActors3
+        donorActors3 = new Actor[128]
+        If !donorActors3 || donorActors3.Length != 128
+            StorageFailure("donorActors3", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorHidden3 as Bool) && donorHidden3.Length != 128
+        StorageFailure("donorHidden3 saved length", 128)
+        Return False
+    EndIf
+    If !donorHidden3
+        donorHidden3 = new Int[128]
+        If !donorHidden3 || donorHidden3.Length != 128
+            StorageFailure("donorHidden3", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorActors4 as Bool) && donorActors4.Length != 128
+        StorageFailure("donorActors4 saved length", 128)
+        Return False
+    EndIf
+    If !donorActors4
+        donorActors4 = new Actor[128]
+        If !donorActors4 || donorActors4.Length != 128
+            StorageFailure("donorActors4", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    If (donorHidden4 as Bool) && donorHidden4.Length != 128
+        StorageFailure("donorHidden4 saved length", 128)
+        Return False
+    EndIf
+    If !donorHidden4
+        donorHidden4 = new Int[128]
+        If !donorHidden4 || donorHidden4.Length != 128
+            StorageFailure("donorHidden4", 128)
+            Return False
+        EndIf
+        repairRequested = True
+    EndIf
+    Return True
+EndFunction
+
+Int Function DonorHiddenRead(Int index)
+    Int page = index / 128
+    Int localIndex = index % 128
+    If page == 0
+        Return donorHidden0[localIndex]
+    ElseIf page == 1
+        Return donorHidden1[localIndex]
+    ElseIf page == 2
+        Return donorHidden2[localIndex]
+    ElseIf page == 3
+        Return donorHidden3[localIndex]
+    ElseIf page == 4
+        Return donorHidden4[localIndex]
+    EndIf
+    Return 0
+EndFunction
+
+Function DonorHiddenWrite(Int index, Int samples)
+    Int page = index / 128
+    Int localIndex = index % 128
+    If page == 0
+        donorHidden0[localIndex] = samples
+    ElseIf page == 1
+        donorHidden1[localIndex] = samples
+    ElseIf page == 2
+        donorHidden2[localIndex] = samples
+    ElseIf page == 3
+        donorHidden3[localIndex] = samples
+    ElseIf page == 4
+        donorHidden4[localIndex] = samples
+    EndIf
+EndFunction
+
+Actor Function DonorActorRead(Int index)
+    Int page = index / 128
+    Int localIndex = index % 128
+    If page == 0
+        If !donorActors0 || localIndex >= donorActors0.Length
+            Return None
+        EndIf
+        Return donorActors0[localIndex]
+    ElseIf page == 1
+        If !donorActors1 || localIndex >= donorActors1.Length
+            Return None
+        EndIf
+        Return donorActors1[localIndex]
+    ElseIf page == 2
+        If !donorActors2 || localIndex >= donorActors2.Length
+            Return None
+        EndIf
+        Return donorActors2[localIndex]
+    ElseIf page == 3
+        If !donorActors3 || localIndex >= donorActors3.Length
+            Return None
+        EndIf
+        Return donorActors3[localIndex]
+    ElseIf page == 4
+        If !donorActors4 || localIndex >= donorActors4.Length
+            Return None
+        EndIf
+        Return donorActors4[localIndex]
+    EndIf
+    Return None
+EndFunction
+
+Function DonorActorWrite(Int index, Actor child)
+    Int page = index / 128
+    Int localIndex = index % 128
+    If page == 0
+        donorActors0[localIndex] = child
+    ElseIf page == 1
+        donorActors1[localIndex] = child
+    ElseIf page == 2
+        donorActors2[localIndex] = child
+    ElseIf page == 3
+        donorActors3[localIndex] = child
+    ElseIf page == 4
+        donorActors4[localIndex] = child
+    EndIf
+EndFunction
+
+
+Bool Function ArrivalRelevant()
+    If PlayerInCity()
+        Return True
+    EndIf
+    ; Cold exterior location seams can use the same direct VMAD road bindings
+    ; before the private road cache exists. No new destinations or boundaries.
+    Actor viewer = Game.GetPlayer()
+    If CityWorld != None && viewer.GetWorldSpace() == CityWorld && !viewer.IsInInterior() && (RoadRefs as Bool)
+        Int n = 0
+        While n < RoadRefs.Length
+            If RoadRefs[n] != None && viewer.GetDistance(RoadRefs[n]) <= 4096.0
+                Return True
+            EndIf
+            n += 1
+        EndWhile
+    EndIf
+    Return False
+EndFunction
+
+Function PlanDormant()
+    UnregisterForUpdate()
+    UnregisterForUpdateGameTime()
+    arrivalWasRelevant = False
+    Float hour = HourAt(Utility.GetCurrentGameTime())
+    Float until = 32.0 - hour
+    If hour < 8.0
+        until = 8.0 - hour
+    EndIf
+    If until < 0.05
+        until = 0.05
+    EndIf
+    ; One daily wake, plus existing load/cell/location events. No arrival polling.
+    RegisterForSingleUpdateGameTime(until)
+EndFunction
+
+Bool Function HasPendingArrivals()
+    If ResidentCount() >= dailyPopulation
+        Return False
+    EndIf
+    Int s = 0
+    While s < dailyPopulation
+        If residents[s] == None
+            Return True
+        EndIf
+        s += 1
+    EndWhile
+    Return False
+EndFunction
+
+Function ProcessArrival()
+    Float stamp = Utility.GetCurrentGameTime()
+    Int cycle = CycleAt(stamp)
+    Bool relevant = ArrivalRelevant()
+    Bool newCycle = arrivalScheduleCycle != cycle
+    If newCycle
+        arrivalScheduleCycle = cycle
+        nextArrivalAt = 0.0
+    EndIf
+    If !relevant
+        arrivalWasRelevant = False
+        interiorArrivalPending = False
+        Return
+    EndIf
+    If interiorArrivalPending && interiorArrivalCycle != cycle
+        interiorArrivalPending = False
+    EndIf
+    If Game.GetPlayer().IsInInterior()
+        interiorArrivalPending = True
+        interiorArrivalCycle = cycle
+    EndIf
+    ; Retain full-pool recovery, but not a census on every roaming callback.
+    ; Explicit recovery still runs before arrivals. A routine six-hour census
+    ; can wait until the short arrival sequence finishes, instead of blocking
+    ; an already-due child behind another whole-pool native scan.
+    If !poolAudited || (stamp >= nextPoolAuditAt && !HasPendingArrivals())
+        Int ticket = workEpoch
+        Int full = FullEnabledCount()
+        If ticket != workEpoch
+            Return
+        EndIf
+        diagFullEnabled = full
+        poolAudited = True
+        nextPoolAuditAt = stamp + 0.25
+        If full > EnabledCount()
+            repairRequested = True
+            Status(16, 21)
+            Return
+        EndIf
+    EndIf
+    ; A full native audit may yield for a long time: never use its old clock.
+    stamp = Utility.GetCurrentGameTime()
+    cycle = CycleAt(stamp)
+    If arrivalScheduleCycle != cycle
+        Return
+    EndIf
+    Bool wasRelevant = arrivalWasRelevant
+    arrivalWasRelevant = True
+    If !Daylight(HourAt(stamp)) || repairRequested || orphanPresent || !HasPendingArrivals()
+        nextArrivalAt = 0.0
+        interiorArrivalPending = False
+        Return
+    EndIf
+    If interiorArrivalPending
+        FillInteriorOpportunity(cycle)
+        Return
+    EndIf
+    If nextArrivalAt <= 0.0
+        Float anchor = stamp
+        If newCycle && wasRelevant
+            ; Waiting through 08:00 produces at most one overdue arrival.
+            anchor = (cycle as Float) + 8.0 / 24.0
+        EndIf
+        nextArrivalAt = anchor + Utility.RandomFloat(3.0, 7.0) / 1440.0
+    EndIf
+    If stamp < nextArrivalAt
+        Status(8, 42)
+        Return
+    EndIf
+    Int s = 0
+    While s < dailyPopulation && residents[s] != None
+        s += 1
+    EndWhile
+    If s < dailyPopulation
+        Int owner = workEpoch
+        TryPendingArrival(s, cycle)
+        If owner != workEpoch
+            Return
+        EndIf
+    EndIf
+    ; After latent placement use current time, never replay missed intervals.
+    nextArrivalAt = Utility.GetCurrentGameTime() + Utility.RandomFloat(3.0, 7.0) / 1440.0
+EndFunction
+
+
+Float Function ArrivalFallbackDelay()
+    ; One counterpart to the saved GAME-TIME deadline, not a polling cadence.
+    ; Both events call the same serialized worker and test nextArrivalAt.
+    Float stamp = Utility.GetCurrentGameTime()
+    If !ArrivalRelevant()
+        Return 0.0
+    EndIf
+    Float due = nextArrivalAt
+    If Daylight(HourAt(stamp))
+        If due <= 0.0 || !HasPendingArrivals()
+            Return 0.0
+        EndIf
+    Else
+        ; Empty local settlements also need one wake for the next08:00 cycle.
+        ; Active nighttime residents retain their existing maintenance timers.
+        If ResidentCountSafe() > 0 || orphanPresent
+            Return 0.0
+        EndIf
+        ; Use the same hour test as Daylight. Near08:00 float rounding can
+        ; otherwise make CycleAt advance while HourAt still reads just before8.
+        due = ((stamp as Int) as Float) + 8.0 / 24.0
+        If HourAt(stamp) >= 8.0
+            due += 1.0
+        EndIf
+    EndIf
+    If arrivalTimeScale == None
+        ; UESP extracted Skyrim master metadata: TimeScale [GLOB:0000003A].
+        arrivalTimeScale = Game.GetFormFromFile(0x3A, "Skyrim.esm") as GlobalVariable
+    EndIf
+    If arrivalTimeScale == None
+        Return 0.0
+    EndIf
+    Float scale = arrivalTimeScale.GetValue()
+    If scale <= 0.0
+        Return 0.0
+    EndIf
+    Float seconds = (due - stamp) * 86400.0 / scale
+    If seconds < 2.0
+        seconds = 2.0
+    EndIf
+    Return seconds
+EndFunction
+
+
+Bool Function PlaceArrival(Int s, Int cycle, Actor chosen, Int index)
+    Int ticket = workEpoch
+    ObjectReference point = roads[index]
+    diagGoal = index
+    diagSelectedPoint = point
+    If !DayAIReady(s, index, "TryArrival.day AI before enable")
+        Return False
+    EndIf
+    If ticket != workEpoch || residents[s] != None || !chosen.IsDisabled() || ReferenceInUse(chosen)
+        Return False
+    EndIf
+    Status(9)
+    If ticket != workEpoch
+        Return False
+    EndIf
+    chosen.MoveTo(point, 0.0, 0.0, 0.0, True)
+    Status(10)
+    Float stamp = Utility.GetCurrentGameTime()
+    If ticket != workEpoch
+        Return False
+    EndIf
+    If !Daylight(HourAt(stamp)) || CycleAt(stamp) != cycle
+        Defer(s, 23, "schedule changed during placement")
+        Return False
+    EndIf
+    If !SafeArrival(point)
+        Defer(s, 24, "outdoor ground reference became invalid after MoveTo")
+        Return False
+    EndIf
+    ; The complete 200-variant slot audit ran BEFORE marker selection. This
+    ; worker alone may activate our references. Preserve ownership, capacity,
+    ; chosen-reference and reservation checks without another slow pool scan.
+    If orphanPresent || ResidentCount() >= dailyPopulation || residents[s] != None || !chosen.IsDisabled() || ReferenceInUse(chosen)
+        Return False
+    EndIf
+    If ticket != workEpoch
+        Return False
+    EndIf
+    residents[s] = chosen
+    residentCycle[s] = cycle
+    lastArrivalCycle[s] = cycle
+    arrivalIndex[s] = index
+    retireSlot[s] = False
+    disablingSlot[s] = False
+    hiddenCount[s] = 0
+    destination[s] = index
+    priorDestination[s] = -1
+    deadline[s] = stamp + Utility.RandomFloat(2.0, 8.0) / 1440.0
+    SetPhase(s, 0)
+    If ticket != workEpoch
+        Return False
+    EndIf
+    Bool safe = Daylight(HourAt(Utility.GetCurrentGameTime())) && CycleAt(Utility.GetCurrentGameTime()) == cycle && SafeArrival(point)
+    If ticket != workEpoch
+        Return False
+    EndIf
+    If !safe
+        residents[s] = None
+        lastArrivalCycle[s] = -100000
+        arrivalIndex[s] = -1
+        Defer(s, 24, "schedule or outdoor ground reference changed before enable")
+        Return False
+    EndIf
+    Float started = Utility.GetCurrentRealTime()
+    ; No yielding native between this final owner check and enable request.
+    If ticket != workEpoch
+        Return False
+    EndIf
+    enableUntil[s] = started + 120.0
+    chosen.Enable(False)
+    If ticket != workEpoch
+        repairRequested = True
+        UnregisterForUpdate()
+        RegisterForSingleUpdate(1.0)
+        Return False
+    EndIf
+    Bool disabled = chosen.IsDisabled()
+    If ticket != workEpoch
+        Return False
+    EndIf
+    If disabled
+        ; Enable has returned; a disabled reference is not a successful arrival.
+        residents[s] = None
+        lastArrivalCycle[s] = -100000
+        arrivalIndex[s] = -1
+        enableUntil[s] = 0.0
+        Defer(s, 44, "native Enable completed but actor is still disabled")
+        Return False
+    EndIf
+    enableUntil[s] = 0.0
+    priorArrivalDoor = diagArrivalDoor
+    diagArrivalEnabledAt = Utility.GetCurrentGameTime()
+    diagEnableConfirmed += 1
+    Log("activation timing; due(game days)=" + diagArrivalDueAt + "; attempt=" + diagArrivalAttemptAt + "; enabled=" + diagArrivalEnabledAt + "; overdue(game min)=" + (diagArrivalEnabledAt - diagArrivalDueAt) * 1440.0)
+    deferredReason[s] = 0
+    Status(12)
+    If !Daylight(HourAt(Utility.GetCurrentGameTime()))
+        SetPhase(s, 3)
+    EndIf
+    chosen.EvaluatePackage()
+    Log("enabled confirmed; slot=" + s + "; ref=" + chosen + "; road=" + point)
+    Return True
+EndFunction
+
+Float Function PendingEnableDelay()
+    ; One deadline wake for legacy async reservations, including full arrays.
+    ; No repeating confirmation poll and no scan of unselected appearances.
+    Float delay = 0.0
+    Float now = Utility.GetCurrentRealTime()
+    Int s = 0
+    While s < MaxPopulation
+        If residents[s] != None && enableUntil[s] > 0.0 && !disablingSlot[s]
+            If residents[s].IsDisabled()
+                Float until = enableUntil[s] - now
+                If until < 1.0
+                    until = 1.0
+                EndIf
+                If delay <= 0.0 || until < delay
+                    delay = until
+                EndIf
+            EndIf
+        EndIf
+        s += 1
+    EndWhile
+    Return delay
+EndFunction
+
+String Function ActivationStates()
+    If !residents || residents.Length != 9 || !enableUntil || enableUntil.Length != 9
+        Return "storage not initialized"
+    EndIf
+    String result = ""
+    Int s = 0
+    Float now = Utility.GetCurrentRealTime()
+    While s < MaxPopulation
+        Actor child = residents[s]
+        result += s + ":"
+        If child == None
+            result += "empty "
+        ElseIf child.IsDisabled()
+            result += "DISABLED(reserved),remaining=" + (enableUntil[s] - now) + " "
+        Else
+            result += "enabled,3D=" + child.Is3DLoaded() + ",cell=" + child.GetParentCell() + " "
+        EndIf
+        s += 1
+    EndWhile
+    Return result
+EndFunction
+
+
+Int Function DoorArrivalIndex()
+    ; A bounded, arrival-only query around the SAME preconfigured roaming
+    ; points. No player-based queries, global discovery or new territory.
+    ; Place at verified ground, never in an unverified door mesh/offset.
+    diagArrivalDoor = None
+    diagDoorFallback = True
+    If arrivalDoorTypes == None
+        arrivalDoorTypes = Game.GetFormFromFile(0x2221E0, "MoreBrats.esp") as FormList
+    EndIf
+    Int count = roads.Length
+    If count < 1
+        Return -1
+    EndIf
+    Int offset = Utility.RandomInt(0, count - 1)
+    Int probe = 0
+    Int fallback = -1
+    Int repeated = -1
+    ObjectReference repeatedDoor = None
+    While probe < count
+        Int index = (offset + probe) % count
+        ObjectReference ground = roads[index]
+        If RoadValid(ground)
+            If fallback < 0
+                fallback = index
+            EndIf
+            If arrivalDoorTypes != None
+                ObjectReference door = Game.FindRandomReferenceOfAnyTypeInListFromRef(arrivalDoorTypes, ground, 512.0)
+                If door != None && !door.IsDisabled()
+                    Cell outside = door.GetParentCell()
+                    If outside != None && !outside.IsInterior() && door.GetWorldSpace() == CityWorld
+                        If door != priorArrivalDoor
+                            diagArrivalDoor = door
+                            diagDoorFallback = False
+                            Return index
+                        ElseIf repeated < 0
+                            repeated = index
+                            repeatedDoor = door
+                        EndIf
+                    EndIf
+                EndIf
+            EndIf
+        EndIf
+        probe += 1
+    EndWhile
+    If repeated >= 0
+        diagArrivalDoor = repeatedDoor
+        diagDoorFallback = False
+        Return repeated
+    EndIf
+    ; Unloaded local queries or a missing optional catalog must never stall
+    ; an otherwise valid arrival. Random starting point also randomizes fallback.
+    Return fallback
+EndFunction
+
+
+Bool Function WorkerProgress(Int ticket)
+    ; Progress, not total workload duration, determines whether work is stuck.
+    ; Called at bounded checkpoints inside existing finite loops, never polled.
+    If ticket != workEpoch
+        Return False
+    EndIf
+    If processing && leaseArmed
+        Float now = Utility.GetCurrentRealTime()
+        If ticket != workEpoch
+            Return False
+        EndIf
+        leaseStart = now
+        leaseUntil = now + 120.0
+    EndIf
+    Return True
+EndFunction
+
+Function PrimeArrivalDeadline()
+    ; Preserve the existing game-minute design, measured from relevance/entry,
+    ; not from the end of a potentially long old-save cache/recovery pass.
+    If !ArrivalRelevant()
+        Return
+    EndIf
+    Float stamp = Utility.GetCurrentGameTime()
+    If !Daylight(HourAt(stamp))
+        Return
+    EndIf
+    Int cycle = CycleAt(stamp)
+    Float anchor = stamp
+    If arrivalScheduleCycle != cycle
+        If arrivalWasRelevant
+            anchor = (cycle as Float) + 8.0 / 24.0
+        EndIf
+        arrivalScheduleCycle = cycle
+        nextArrivalAt = 0.0
+    EndIf
+    Bool olderLongDelay = (nextArrivalAt - stamp) * 1440.0 > 7.1
+    If (nextArrivalAt <= 0.0 || olderLongDelay) && (dailyPopulation == 0 || ResidentCountSafe() < dailyPopulation)
+        nextArrivalAt = anchor + Utility.RandomFloat(3.0, 7.0) / 1440.0
+    EndIf
+EndFunction
+
+Function TryPendingArrival(Int s, Int cycle)
+    Int ticket = workEpoch
+    If lastArrivalCycle[s] == cycle
+        ; An empty saved/current slot is reusable only after verifying that
+        ; no appearance reference in that slot remains enabled.
+        Bool empty = PoolSlotDisabled(s)
+        If ticket != workEpoch
+            Return
+        EndIf
+        If empty
+            lastArrivalCycle[s] = -100000
+        Else
+            repairRequested = True
+            Defer(s, 21, "empty tracked slot contains an enabled reference; existing recovery requested")
+        EndIf
+    EndIf
+    If ticket == workEpoch && !repairRequested
+        TryArrival(s, cycle)
+    EndIf
+    If ticket != workEpoch
+        Return
+    EndIf
+    If residents[s] == None && deferredReason[s] == 21
+        ; A selected-slot audit found an untracked enabled reference. Use
+        ; existing adoption/retirement, rather than deferring until census.
+        repairRequested = True
+    EndIf
+EndFunction
+
+; Cosmetic identity, derived from the immutable 200-index mapping.
+Int Function DonorKey(Int variant)
+    If variant < 0 || variant >= 200
+        Return -1
+    EndIf
+    If variant >= 40
+        Return 8 + (variant - 40) / 5
+    EndIf
+    Int local = variant % 10
+    Int gender = 0
+    If (local >= 3 && local < 6) || local >= 8
+        gender = 1
+    EndIf
+    Return (variant / 10) * 2 + gender
+EndFunction
+
+Int Function VariantClothing(Int variant)
+    If variant >= 40
+        Return (variant - 40) % 5
+    EndIf
+    Int local = variant % 10
+    If local < 6
+        Return local % 3
+    EndIf
+    Return 3 + (local - 6) % 2
+EndFunction
+
+Int Function VariantForDonor(Int key, Int clothing)
+    If key >= 8
+        Return 40 + (key - 8) * 5 + clothing
+    EndIf
+    Int gender = key % 2
+    If clothing < 3
+        Return (key / 2) * 10 + gender * 3 + clothing
+    EndIf
+    Return (key / 2) * 10 + 6 + gender * 2 + clothing - 3
+EndFunction
+
+Int Function DonorGroup(Int key)
+    If key < 8
+        Return key
+    ElseIf key < 23
+        Return 0
+    ElseIf key < 35
+        Return 1
+    ElseIf key == 35
+        Return 2
+    ElseIf key == 36
+        Return 3
+    ElseIf key == 37
+        Return 4
+    ElseIf key == 38
+        Return 6
+    EndIf
+    Return 7
+EndFunction
+
+Int Function AvailableDonors(Int slot, Int group, Int clothing, Bool[] used)
+    Int count = 0
+    Int key = 0
+    While key < 40
+        If DonorGroup(key) == group && !used[key]
+            If PoolActor(PoolIndex(slot, VariantForDonor(key, clothing))) != None
+                count += 1
+            EndIf
+        EndIf
+        key += 1
+    EndWhile
+    Return count
+EndFunction
+
+Int Function UniqueVariant(Int slot, Int preferred, Bool[] used)
+    Int key = DonorKey(preferred)
+    If key < 0
+        Return -1
+    EndIf
+    If !used[key] && PoolActor(PoolIndex(slot, preferred)) != None
+        Return preferred
+    EndIf
+    Int clothing = VariantClothing(preferred)
+    Int group = DonorGroup(key)
+    Int count = AvailableDonors(slot, group, clothing, used)
+    If count == 0
+        ; A category can contain only one donor. Keep the ordinary rolls unless
+        ; uniqueness exhausts it; then choose uniformly among available groups.
+        Int groups = 0
+        Int g = 0
+        While g < 8
+            If AvailableDonors(slot, g, clothing, used) > 0
+                groups += 1
+            EndIf
+            g += 1
+        EndWhile
+        If groups == 0
+            Return -1
+        EndIf
+        Int pick = Utility.RandomInt(0, groups - 1)
+        g = 0
+        While g < 8
+            Int size = AvailableDonors(slot, g, clothing, used)
+            If size > 0
+                If pick == 0
+                    group = g
+                    count = size
+                    g = 8
+                Else
+                    pick -= 1
+                EndIf
+            EndIf
+            g += 1
+        EndWhile
+    EndIf
+    Int choice = Utility.RandomInt(0, count - 1)
+    key = 0
+    While key < 40
+        If DonorGroup(key) == group && !used[key]
+            Int v = VariantForDonor(key, clothing)
+            If PoolActor(PoolIndex(slot, v)) != None
+                If choice == 0
+                    Return v
+                EndIf
+                choice -= 1
+            EndIf
+        EndIf
+        key += 1
+    EndWhile
+    Return -1
+EndFunction
+
+Int Function VariantForActor(Actor child)
+    If child == None
+        Return -1
+    EndIf
+    Int id = child.GetFormID() % 0x1000000
+    ; Vanilla FormIDs are signed Papyrus Ints for load indices80..FD.
+    If id < 0
+        id += 0x1000000
+    EndIf
+    Int index = -1
+    Int appended = 0x100000 + ConfigBase * 16 + 0x2000
+    Int races = 0x20000 + ConfigBase + 0x100
+    If id >= appended && id < appended + MaxPopulation * 160
+        index = MaxPopulation * 40 + id - appended
+    ElseIf id >= races && id < races + MaxPopulation * 30
+        index = MaxPopulation * 10 + id - races
+    EndIf
+    If index < 0 && id >= ConfigBase + 0x100 && id < ConfigBase + 0x100 + MaxPopulation * 10
+        index = id - ConfigBase - 0x100
+    EndIf
+    If index < 0 || index >= AppearancePoolSize() || PoolActor(index) != child
+        Return -1
+    EndIf
+    If index >= MaxPopulation * 40
+        Return 40 + (index - MaxPopulation * 40) / MaxPopulation
+    EndIf
+    Return (index / (MaxPopulation * 10)) * 10 + index % 10
+EndFunction
+
+Int Function StreetArrivalIndex()
+    ; Exact same pre-existing street whitelist used by v1.1.0. No door query,
+    ; new coordinates, player-distance gate or appearance-pool scan.
+    diagArrivalDoor = None
+    diagDoorFallback = True
+    Int count = roads.Length
+    Int offset = Utility.RandomInt(0, count - 1)
+    Int probe = 0
+    Int fallback = -1
+    While probe < count
+        Int index = (offset + probe) % count
+        If RoadValid(roads[index])
+            If fallback < 0
+                fallback = index
+            EndIf
+            Bool occupied = False
+            Int peer = 0
+            While peer < MaxPopulation && !occupied
+                occupied = residents[peer] != None && arrivalIndex[peer] == index
+                peer += 1
+            EndWhile
+            If !occupied
+                Return index
+            EndIf
+        EndIf
+        probe += 1
+    EndWhile
+    Return fallback
+EndFunction
+
+Function FillInteriorOpportunity(Int cycle)
+    Int ticket = workEpoch
+    Int s = 0
+    ; Share the existing target, residents, reservation and worker lease. Never
+    ; roll another population or create references. Bound work by the same cap.
+    While s < dailyPopulation && ticket == workEpoch
+        If repairRequested || orphanPresent || !Daylight(HourAt(Utility.GetCurrentGameTime())) || CycleAt(Utility.GetCurrentGameTime()) != cycle || !ArrivalRelevant()
+            s = dailyPopulation
+        Else
+            If residents[s] == None && ResidentCount() < dailyPopulation
+                TryPendingArrival(s, cycle)
+            EndIf
+            s += 1
+        EndIf
+    EndWhile
+    If ticket == workEpoch
+        interiorArrivalPending = False
+        If HasPendingArrivals()
+            nextArrivalAt = Utility.GetCurrentGameTime() + Utility.RandomFloat(3.0, 7.0) / 1440.0
+        Else
+            nextArrivalAt = 0.0
+        EndIf
+    EndIf
 EndFunction

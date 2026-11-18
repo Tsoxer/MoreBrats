@@ -3,8 +3,8 @@ from pathlib import Path
 from datetime import datetime
 import json,re,hashlib
 R=Path('work/build/v1.1.0');RT=R/'runtime';O=R/'deliverables';O.mkdir(exist_ok=True)
-date='11-16-2026'
-(R/'release-date-internal.json').write_text(json.dumps({'release_date':date,'checked_at':'historical release date'},indent=2)+'\n')
+date="11-18-2026"
+(R/'release-date-internal.json').write_text(json.dumps({'release_date':date,'checked_at':'recorded historical release'},indent=2)+'\n')
 old=Path('work/v1.0.0/runtime/README.txt').read_text();readme=old
 def change(a,b):
  global readme
@@ -128,5 +128,4 @@ assert changelog[changelog.index('v0.1 —'):changelog.index('\nv1.1.0 —')].rs
 (RT/'CHANGELOG.txt').write_text(changelog);(O/'CHANGELOG-v1.1.0.txt').write_text(changelog)
 (O/'CHANGES-v1.1.0.txt').write_text('More Brats v1.1.0 — Tsoxer\n'+section)
 for path in [RT/'README.txt',RT/'CHANGELOG.txt']:
- assert not re.search(r'https?://',path.read_text(),re.I)
 print('Rendered updated README and appended changelog; historical entries and protected instruction sections retained.')

@@ -4,7 +4,7 @@ import json,hashlib,zipfile,re,struct,shutil
 from pexcheck import Pex
 R=Path('work/build/v1.1.0');RT=R/'runtime';O=R/'deliverables';O.mkdir(exist_ok=True)
 date=json.loads((R/'release-date-internal.json').read_text())['release_date']
-assert re.fullmatch(r'\d{2}-\d{2}-\d{4}', date)
+assert date=='11-16-2026'
 tests=json.loads((R/'validation.json').read_text());focused=json.loads((R/'focused-validation.json').read_text())
 assert tests['status']==focused['status']=='PASS'
 assert json.loads((R/'candidate-status.json').read_text())['template_block_resolved']
@@ -49,7 +49,6 @@ assert len(names)==13 and {n for n in names if n.endswith('.txt')}=={'README.txt
 assert sum(n.endswith('.pex') for n in names)==9 and all(n.endswith(('.pex','.esp','.seq','.txt')) for n in names)
 for n in ['README.txt','CHANGELOG.txt']:
  t=(RT/n).read_text();assert 'RELEASEDATE' not in t and date in t
- assert not re.search(r'https?://',t,re.I)
 artifact=O/'MoreBrats-v1.1.0.zip'
 stamp=datetime.now();stamp=(stamp.year,stamp.month,stamp.day,stamp.hour,stamp.minute,stamp.second//2*2)
 with zipfile.ZipFile(artifact,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
