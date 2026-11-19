@@ -113,7 +113,9 @@ More Brats uses vanilla Skyrim Papyrus and native AI. **SKSE, Address Library, S
 ## Credits
 
 Author: Tsoxer
-Development assistance: Codex (OpenAI) (code generation and debugging).
+
+Development assistance: Codex (OpenAI) (code generation and debugging).
+
 Design, direction, and in-game testing: Tsoxer.
 
 ## Licensing
