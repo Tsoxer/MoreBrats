@@ -110,6 +110,12 @@ The source-export README and cumulative changelog identify v1.2.7 as the working
 
 More Brats uses vanilla Skyrim Papyrus and native AI. **SKSE, Address Library, SPID and other external gameplay frameworks are not required.** The development dependencies above are build tools, not requirements for playing the mod.
 
+## Credits
+
+Author: Tsoxer
+Development assistance: Codex (OpenAI) (code generation and debugging).
+Design, direction, and in-game testing: Tsoxer.
+
 ## Licensing
 
 Tsoxer's original More Brats material remains **source available, all rights reserved**, as specified in the supplied [`LICENSE.md`](LICENSE.md). This export does not change that notice or grant a new license. Separately licensed tools, libraries and applicable derivatives remain governed by their own terms; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
